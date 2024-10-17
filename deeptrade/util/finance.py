@@ -3,6 +3,14 @@ import pandas as pd
 
 from typing import Union
 
+def calculate_log_returns(prices: np.ndarray) -> np.ndarray:
+    """Calculate the log returns."""
+    return np.log(prices[1:] / prices[:-1])
+
+def calculate_simple_returns(prices: np.ndarray) -> np.ndarray:
+    """Calculate the simple returns."""
+    return prices[1:] / prices[:-1] - 1
+
 def calculate_drawdowns(prices: np.ndarray) -> np.ndarray:
     """Calculate the drawdowns."""
     max_prices = np.maximum.accumulate(prices)
