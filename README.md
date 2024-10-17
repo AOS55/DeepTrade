@@ -46,8 +46,24 @@ python -m pytest tests/instruments
 
 The core idea of DeepTrade is to backtest machine learning trading strategies based on either synthetic or real data. Backtesting is split into 2 datasets, training data, available at the start of the theoretical trading period and backtest data used to evaluate the strategy which is where you started the strategy from. The following provides an overview of the basic components of the library, examples of various backtests are provided in the [notebooks](notebooks) directory.
 
-<img align="center" src="https://github.com/AOS55/DeepTrade/blob/assets/assets/Backtest-Split.svg" width="400" alt="Train/Backtest split">
+The train-backtest split is shown below:
 
+<img align="center" src="https://github.com/AOS55/DeepTrade/blob/assets/assets/Backtest-Split.svg" width="500" alt="Train/Backtest split">
+
+The classical [Markov Decision Process](https://en.wikipedia.org/wiki/Markov_decision_process) (MDP) is used to model the trading environment. The environment is defined by the following components:
+
+- **Environment**: The environment is the trading environment that the agent interacts with. It is responsible for providing the agent with observations, rewards, and other information about the state of the environment. The environment is defined by the `gymnasium` interface. These include:
+  - `SingleInstrument-v0`: A single instrument trading environment designed for a simple single asset portfolio.
+  - `MultiInstrument-v0`: A multi-instrument trading environment designed to hold a multiple asset portfolio.
+- **Agent**: The agent is the decision maker that interacts with the environment. The agent is responsible for selecting actions based on observations from the environment. Model Based RL (MBRL) agents are provided along with classical systematic trading strategies. These include:
+  - **MBRL agents**
+    - `PETS`: Probabilistic Ensemble Trajectory Sampling from [Chua et al. (2018)](https://arxiv.org/abs/1805.12114).
+    - `MBPO`: :construction: Model Based Policy Optimization from [Janner et al. (2019)](https://arxiv.org/abs/1906.08253). :construction:
+    - `Dreamer`: Dream to Control from [Hafner et al. (2019)](https://arxiv.org/abs/1912.01603).
+  - **Systematic agents**
+    - `HoldAgent`: A simple buy and hold strategy.
+    - `EWMACAgent`: Exponential Weighted Moving Average Crossover, momentum based trend following.
+    - `BreakoutAgent`: Breakout strategy, based on the high and low of the previous `n` periods.
 ### Environment
 
 ```python
