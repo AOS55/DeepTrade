@@ -52,14 +52,26 @@ The train-backtest split is shown below:
 
 The classical [Markov Decision Process](https://en.wikipedia.org/wiki/Markov_decision_process) (MDP) is used to model the trading environment. The environment is defined by the following components:
 
-- **Environment**: The environment is the trading environment that the agent interacts with. It is responsible for providing the agent with observations, rewards, and other information about the state of the environment. The environment is defined by the `gymnasium` interface. These include:
+- **Environment**: the trading environment represents the world the agent interacts with, $p(s'|s, a)$. This is responsible for providing the agent with observations, rewards, and other information about the state of the environment. The environment is defined by the `gymnasium` interface. These include:
   - `SingleInstrument-v0`: A single instrument trading environment designed for a simple single asset portfolio.
   - `MultiInstrument-v0`: A multi-instrument trading environment designed to hold a multiple asset portfolio.
-- **Agent**: The agent is the decision maker that interacts with the environment. The agent is responsible for selecting actions based on observations from the environment. Model Based RL (MBRL) agents are provided along with classical systematic trading strategies. These include:
+
+  Each of the trading environments have the following key components:
+    -  **Market data**: either generated synthetically or from a real dataset. Data is queried at time $t$ which is updated by a size `period` each time around the env-agent loop.
+    -  **Account**: represents the portfolio consisting of:
+       -  `Margin`: the amount of cash available.
+       -  `Positions`: the quantity of the asset held.
+
+  The observation of the environment is a numpy array consisting of:
+    - `returns`, $r_{t-\tau:t}$ from the asset price, usually log returns over `window` $\tau$.
+    - `position`, position of the portfolio in the asset.
+    - `margin`, the amount of cash available.
+
+- **Agent**: The agent, $\pi(a|s)$, is the decision maker that interacts with the environment. The agent is responsible for selecting actions based on observations from the environment. Model Based RL (MBRL) agents are provided along with classical systematic trading strategies. These include:
   - **MBRL agents**
     - `PETS`: Probabilistic Ensemble Trajectory Sampling from [Chua et al. (2018)](https://arxiv.org/abs/1805.12114).
     - `MBPO`: :construction: Model Based Policy Optimization from [Janner et al. (2019)](https://arxiv.org/abs/1906.08253). :construction:
-    - `Dreamer`: Dream to Control from [Hafner et al. (2019)](https://arxiv.org/abs/1912.01603).
+    - `Dreamer`: :construction: Dream to Control from [Hafner et al. (2019)](https://arxiv.org/abs/1912.01603). :construction:
   - **Systematic agents**
     - `HoldAgent`: A simple buy and hold strategy.
     - `EWMACAgent`: Exponential Weighted Moving Average Crossover, momentum based trend following.
