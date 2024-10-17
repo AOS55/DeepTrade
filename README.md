@@ -46,7 +46,7 @@ python -m pytest tests/instruments
 
 The core idea of DeepTrade is to backtest machine learning trading strategies based on either synthetic or real data. Backtesting is split into 2 datasets, training data, available at the start of the theoretical trading period and backtest data used to evaluate the strategy which is where you started the strategy from. The following provides an overview of the basic components of the library, examples of various backtests are provided in the [notebooks](notebooks) directory.
 
-![Split of train and backtest datasets](https://github.com/AOS55/DeepTrade/blob/assets/assets/Backtest-Split.png)
+![Split of train and backtest datasets](https://github.com/AOS55/DeepTrade/blob/assets/assets/Backtest-Split.svg)<img src="https://github.com/AOS55/DeepTrade/blob/assets/assets/Backtest-Split.svg" width="600">
 
 ### Environment
 
