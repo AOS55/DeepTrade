@@ -1,15 +1,5 @@
-# DeepTrade
+# Assets
 
-`deeptrade` is a backtesting system intended to test various ML models for optimal portfolio allocation and trading strategies.
+This is a branch to seperately store assets used by the main branch.
 
-## Installation
-
-## Usage
-
-## Contributing
-
-## License
-
-## Disclaimer
-
-Deeptrade is for educational and research purposes and should is used for live trading entirely at your own risk.
+Do NOT merge!
