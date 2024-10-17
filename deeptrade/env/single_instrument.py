@@ -4,13 +4,13 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import logger, spaces
 from gymnasium.error import DependencyNotInstalled
-
+from deeptrade.util.finance import calculate_log_returns
 
 class Account:
     
     def __init__(self, cash: float, position: float = 0.0):
         self._margin = cash
-        self._position = 0.0
+        self._position = position
         
     @property
     def position(self):
@@ -65,12 +65,16 @@ class SingleInstrumentEnv(gym.Env):
         self.update_state()
         
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.state.shape[0],), dtype=np.float32)
-        self.action_space = spaces.Box(low=-5.0, high=5.0, shape=(1,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-10.0, high=10.0, shape=(1,), dtype=np.float32)
     
     def step(self, action: float):
         
         # Update position with action
         position = self.account.position[0] + action[0]
+        if position > self.action_space.high[0]:
+            position = self.action_space.high[0]
+        if position < self.action_space.low[0]:
+            position = self.action_space.low[0]
         self.account.position = position  # position just moves based on action
         
         # Advance price and action
@@ -131,7 +135,8 @@ class SingleInstrumentEnv(gym.Env):
         return np.array(self.price_data[time-self._window:time])
     
     def update_state(self):
-        self.state = np.concat([self.prices, self.account.position, self.account.margin])
+        log_returns = calculate_log_returns(self.prices)
+        self.state = np.concat([log_returns, self.account.position, self.account.margin])
     
     def render(self):
         pass
