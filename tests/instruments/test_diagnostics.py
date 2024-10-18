@@ -21,7 +21,11 @@ pathlib.Path.mkdir(_HYDRA_DIR)
 
 # Environment information
 _ENV_NAME = "SingleInstrument-v0"
-_ENV = gym.make(_ENV_NAME)
+_ENV_CONFIG = {
+    "_target_": "deeptrade.env.SingleInstrumentEnv",
+    "price_gen_info": {"starting_price": 1000.0, "mean": 0.0, "std": 0.5, "n_days": 100},
+    }
+_ENV = gym.make(_ENV_NAME, price_gen_info=_ENV_CONFIG["price_gen_info"])
 _OBS_SHAPE = _ENV.observation_space.shape
 _ACT_SHAPE = _ENV.action_space.shape
 _CONF_DIR = pathlib.Path(_REPO_DIR) / "examples" / "backtests" / "configs"
@@ -35,7 +39,7 @@ with open(
 
 _CFG_DICT = {
     "algorithm": {
-        "learned_rewards": True,
+        "learned_rewards": False,
         "target_is_delta": True,
         "normalize": True,
         "dataset_size": 128,
@@ -43,6 +47,7 @@ _CFG_DICT = {
     "dynamics_model": _MODEL_CFG,
     "overrides": {
         "env": f"gym___{_ENV_NAME}",
+        # "env_cfg": _ENV_CONFIG,
         "term_fn": "no_termination",
         "model_batch_size": 32,
         "validation_ratio": 0.1,
@@ -79,7 +84,12 @@ _CFG.dynamics_model.in_size = "???"
 _CFG.dynamics_model.out_size = "???"
 replay_buffer = deeptrade.util.common.create_replay_buffer(_CFG, _OBS_SHAPE, _ACT_SHAPE)
 deeptrade.util.common.rollout_agent_trajectories(
-    _ENV, 128, planning.RandomAgent(_ENV), {}, replay_buffer=replay_buffer
+    env=_ENV,
+    steps_or_trials_to_collect=128,
+    agent=planning.RandomAgent(_ENV),
+    agent_kwargs={},
+    replay_buffer=replay_buffer,
+    trial_length=128
 )
 
 replay_buffer.save(_DIR.name)
@@ -100,7 +110,7 @@ def test_visualizer():
     with open(_HYDRA_DIR / "config.yaml", "w") as f:
         OmegaConf.save(_CFG, f)
 
-    # print(f"cfg: {_CFG}, model_dir: {_DIR.name}")
+    print(f"cfg: {_CFG}, model_dir: {_DIR.name}")
     
     visualizer = diagnostics.DataVisualizer(
         5, _DIR.name, agent_dir=_DIR.name, num_steps=5, num_model_samples=5
