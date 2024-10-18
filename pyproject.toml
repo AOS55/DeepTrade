@@ -1,5 +1,5 @@
 [project]
-name = "deeptrade"
+name = "deeptrade-mbrl"
 version = "0.1.0"
 authors = [
     {name="Alexander Quessy", email="alexander@quessy.io"},
@@ -43,3 +43,13 @@ keywords = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["deeptrade/"]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest"
