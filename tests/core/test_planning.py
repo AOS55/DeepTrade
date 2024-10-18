@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-import deeptrade.planning as planning
+from deeptrade import planning
+
 
 def create_pid_agent(dim,
                      state_mapping=None,
@@ -31,7 +32,7 @@ def test_pid_agent_one_dim():
     pid.reset()
     prev_error, cum_error = pid.get_errors()
     assert np.sum(prev_error) == np.sum(cum_error) == 0
-    
+
 def test_pid_agent_multi_dim():
     """
     This test covers regular updates for the multi-dim PID agent.
@@ -47,7 +48,7 @@ def test_pid_agent_multi_dim():
     pid.reset()
     prev_error, cum_error = pid.get_errors()
     assert np.sum(prev_error) == np.sum(cum_error) == 0
-    
+
 def test_pid_agent_batch(batch_dim=5):
     """
     Tests the agent for batch-mode computation of actions.

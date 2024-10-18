@@ -1,17 +1,18 @@
-import numpy as np
 import gymnasium as gym
+import numpy as np
+
 
 class EWMACAgent:
-    
+
     def __init__(self,
                  env: gym.Env,
                  fast_period: int = 10,
                  slow_period: int = 40):
-        
+
         self._env = env
         self.fast_period = fast_period
-        self.slow_period = slow_period 
-        
+        self.slow_period = slow_period
+
     def act(self, state: np.ndarray) -> int:
         time = self._env.unwrapped.time
         fast = np.array(self._env.unwrapped.price_data[time-self.fast_period:time]).mean()

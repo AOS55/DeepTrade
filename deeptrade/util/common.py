@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import pathlib
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
+from collections.abc import Sequence
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import gymnasium as gym
 import hydra
@@ -599,7 +600,7 @@ def step_env_and_add_to_buffer(
             "env of type deeptrade.env.MujocoGymPixelWrapper."
         )
     if agent_uses_low_dim_obs:
-        agent_obs = getattr(env, "get_last_low_dim_obs")()
+        agent_obs = env.get_last_low_dim_obs()
     else:
         agent_obs = obs
     action = agent.act(agent_obs, **agent_kwargs)

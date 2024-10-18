@@ -1,5 +1,7 @@
 import torch
+
 from . import termination_fns
+
 
 def single_instrument(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
     last_price = next_obs[:, -4]

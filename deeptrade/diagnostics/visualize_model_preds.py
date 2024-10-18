@@ -1,13 +1,13 @@
-import argparse
 import pathlib
-from typing import Generator, List, Optional, Tuple, cast
+from collections.abc import Generator
+from typing import List, Optional, Tuple, cast
 
-from omegaconf import DictConfig
 import gymnasium as gym
-import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from matplotlib import animation
+from omegaconf import DictConfig
 
 import deeptrade
 import deeptrade.models
@@ -17,7 +17,7 @@ import deeptrade.util.common
 VisData = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 class DataVisualizer:
-    
+
     def __init__(
         self,
         lookahead: int,

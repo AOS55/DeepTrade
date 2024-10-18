@@ -3,10 +3,7 @@ from typing import Tuple
 import gymnasium as gym
 import numpy as np
 
-import deeptrade.env.single_instrument
 from deeptrade.env import SingleInstrumentEnv
-import deeptrade.planning
-import deeptrade.types
 from deeptrade.util.env import EnvHandler, Freeze
 
 
@@ -17,7 +14,7 @@ def _is_instrument_env(env: gym.wrappers.TimeLimit) -> bool:
 
 # TODO: Add a test for this to make sure behaves as expected
 class FreezeInstrumentEnv(Freeze):
-    
+
     """
     Provides a context to freeze an instrument environment. 
     
@@ -45,10 +42,10 @@ class FreezeInstrumentEnv(Freeze):
         self._init_state: np.ndarray = None
         self._step_count: int = 0
         self._time: int = 0
-        
+
         if not _is_instrument_env(env):
             raise ValueError("env must be a SingleInstrument environment.")
-        
+
     def __enter__(self):
         self._init_state = self._env.unwrapped.state
         self._time = self._env.unwrapped.time
@@ -57,31 +54,31 @@ class FreezeInstrumentEnv(Freeze):
         self._env.unwrapped.account.position = self._init_state[-2]
         self._env.unwrapped.account.margin = self._init_state[-1]
         self._env.unwrapped.time = self._time
-        
+
 
 class InstrumentEnvHandler(EnvHandler):
-    
+
     """
     Env handler for the SingleInstrument gym environment.
     """
 
     freeze = FreezeInstrumentEnv
-    
+
     # TODO: Find a way to check this
     @staticmethod
     def is_correct_env_type(env):
         return _is_instrument_env(env)
-    
+
     @staticmethod
     def make_env_from_str(env_name: str) -> gym.Env:
-        
+
         if env_name == "SingleInstrument-v0":
             env = gym.make("SingleInstrument-v0")
 
         env = gym.wrappers.TimeLimit(env, max_episode_steps=1000)
-        
+
         return env
-    
+
     @staticmethod
     def get_current_state(env: gym.wrappers.TimeLimit) -> Tuple:
         """
@@ -96,9 +93,9 @@ class InstrumentEnvHandler(EnvHandler):
         Returns:
             tuple: A tuple containing the state of the environment.
         
-        """ 
+        """
         return (env.unwrapped.state, env.unwrapped.time)
-    
+
     @staticmethod
     def set_env_state(state: Tuple, env: gym.wrappers.TimeLimit):
         """

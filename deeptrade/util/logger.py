@@ -5,12 +5,13 @@
 import collections
 import csv
 import pathlib
-from typing import Counter, Dict, List, Mapping, Tuple, Union
+from collections import Counter
+from collections.abc import Mapping
+from typing import Dict, List, Tuple, Union
 
 import termcolor
 import torch
 import wandb
-
 
 LogFormatType = List[Tuple[str, str, str]]
 LogTypes = Union[int, float, torch.Tensor]
@@ -32,7 +33,7 @@ SAC_TRAIN_LOG_FORMAT = [
 ]
 
 
-class AverageMeter(object):
+class AverageMeter:
     def __init__(self):
         self._sum = 0.0
         self._count = 0
@@ -45,7 +46,7 @@ class AverageMeter(object):
         return self._sum / max(1, self._count)
 
 
-class MetersGroup(object):
+class MetersGroup:
     def __init__(self, file_name: Union[str, pathlib.Path], formatting: LogFormatType, use_wandb: bool = False):
         self._csv_file_path = self._prepare_file(file_name, ".csv")
         self._formatting = formatting
@@ -92,7 +93,7 @@ class MetersGroup(object):
             value = data.get(key, 0)
             pieces.append(self._format(disp_key, value, ty))
         print(" | ".join(pieces))
-        
+
     def _dump_to_wandb(self, data):
         wandb.log(data)
 
@@ -110,7 +111,7 @@ class MetersGroup(object):
         self._meters.clear()
 
 
-class Logger(object):
+class Logger:
     """Light-weight csv logger.
 
     This logger is based on pytorch_sac's
@@ -139,7 +140,7 @@ class Logger(object):
         if enable_back_compatible:
             self.register_group("train", SAC_TRAIN_LOG_FORMAT)
             self.register_group("eval", EVAL_LOG_FORMAT, color="green")
-    
+
     def register_group(
         self,
         group_name: str,

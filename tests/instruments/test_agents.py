@@ -1,12 +1,13 @@
 import gymnasium as gym
-import numpy as np
-from deeptrade.env import HoldAgent, EWMACAgent
+
+from deeptrade.env import EWMACAgent, HoldAgent
+
 
 def _make_test_env():
     return gym.make("SingleInstrument-v0")
 
 def _test_agent(env, agent):
-    
+
     state, _ = env.reset()
     agent = agent(env=env)
     for _ in range(100):

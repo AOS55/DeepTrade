@@ -2,7 +2,8 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-from typing import List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -207,6 +208,6 @@ class Conv2dDecoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         deconv = self.fc(x).view(-1, *self.deconv_input_shape)
-        for i in range(0, len(self.deconvs)):
+        for i in range(len(self.deconvs)):
             deconv = self.deconvs[i](deconv)
         return deconv

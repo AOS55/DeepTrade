@@ -1,14 +1,15 @@
-import numpy as np
 import gymnasium as gym
+import numpy as np
+
 
 class HoldAgent:
-    
+
     """Simple agent that holds its position for the entire episode or until bust."""
-    
+
     def __init__(self,
                  env: gym.Env,
                  pos_size: float = 5.0):
-        
+
         self._env = env
         self.pos_size = pos_size
 
@@ -19,4 +20,3 @@ class HoldAgent:
         else:
             action = 0.0
         return np.array([action])
-    

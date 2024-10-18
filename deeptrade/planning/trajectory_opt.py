@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import time
-from typing import Callable, List, Optional, Sequence, Tuple, cast
+from collections.abc import Sequence
+from typing import Callable, List, Optional, Tuple, cast
 
 import hydra
 import numpy as np
@@ -37,7 +38,6 @@ class Optimizer:
         Returns:
             (torch.Tensor): the best solution found.
         """
-        pass
 
 
 class CEMOptimizer(Optimizer):

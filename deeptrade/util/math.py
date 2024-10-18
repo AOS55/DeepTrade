@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 import pathlib
 import pickle
-from typing import Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch

@@ -1,4 +1,3 @@
-import gymnasium as gym
 import numpy as np
 import pytest
 
@@ -9,12 +8,12 @@ def _freeze_instrument_gym_env(env_name):
     handler = create_handler_from_str(env_name)
     env = handler.make_env_from_str(env_name)
     env.reset(seed=0)
-    
+
     seen_obses = []
     seen_rewards = []
     actions = []
     num_steps = 100
-    
+
     with handler.freeze(env):
         for _ in range(num_steps):
             action = env.action_space.sample()
@@ -24,7 +23,7 @@ def _freeze_instrument_gym_env(env_name):
             actions.append(action)
             if terminated or truncated:
                 break
-            
+
     print(env.unwrapped.time)
     for a in actions:
         next_obs, reward, _, _, _ = env.step(a)
@@ -32,7 +31,7 @@ def _freeze_instrument_gym_env(env_name):
         ref_reward = seen_rewards.pop(0)
         np.testing.assert_array_almost_equal(next_obs, ref_obs)
         assert reward == pytest.approx(ref_reward)
-        
+
 
 def _get_and_set_state(env_name):
     """Test state getter and setter run without errors."""
@@ -44,7 +43,7 @@ def _get_and_set_state(env_name):
     # Test if restore works multiple times
     handler.set_env_state(state, env)
 
- 
+
 def _transfer_state(env_name):
     """Test that states can be transferred between environments."""
     handler = create_handler_from_str(env_name)

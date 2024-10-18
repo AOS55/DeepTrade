@@ -1,5 +1,7 @@
 import math
+
 import torch
+
 
 def margin_call(actions: torch.Tensor, next_obs: torch.tensor) -> torch.Tensor:
     margin = next_obs[:, -1]

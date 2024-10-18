@@ -2,12 +2,11 @@ from typing import Optional
 
 import numpy as np
 import omegaconf
-import pytest
 import torch
 
-import deeptrade.models as models
 import deeptrade.util
 import deeptrade.util.common as utils
+from deeptrade import models
 
 
 class MockModel(models.Model):

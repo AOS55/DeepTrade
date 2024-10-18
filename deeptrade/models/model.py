@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 import abc
 import pathlib
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Dict, Optional, Tuple, Union
 
 import torch
 from torch import nn as nn
@@ -76,7 +77,6 @@ class Model(nn.Module, abc.ABC):
         Returns:
             (tuple of tensors): all tensors predicted by the model (e.g., .mean and logvar).
         """
-        pass
 
     @abc.abstractmethod
     def loss(
@@ -355,7 +355,6 @@ class Ensemble(Model, abc.ABC):
 
     def set_elite(self, elite_models: Sequence[int]):
         """For ensemble models, indicates if some models should be considered elite."""
-        pass
 
     @abc.abstractmethod
     def sample_propagation_indices(
@@ -369,7 +368,6 @@ class Ensemble(Model, abc.ABC):
         Returns:
              (tensor) with ``batch_size`` integers from [0, ``self.num_members``).
         """
-        pass
 
     def set_propagation_method(self, propagation_method: Optional[str] = None):
         self.propagation_method = propagation_method

@@ -28,7 +28,6 @@ class Agent:
         Returns:
             (np.ndarray): the action.
         """
-        pass
 
     def plan(self, obs: np.ndarray, **_kwargs) -> np.ndarray:
         """Issues a sequence of actions given an observation.
@@ -46,7 +45,6 @@ class Agent:
 
     def reset(self):
         """Resets any internal state of the agent."""
-        pass
 
 
 class RandomAgent(Agent):

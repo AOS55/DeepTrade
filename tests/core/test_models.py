@@ -5,10 +5,9 @@ import numpy as np
 import omegaconf
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 import deeptrade.models
-import deeptrade.models.util as models_utils
 import deeptrade.util.replay_buffer
 from deeptrade.env.termination_fns import no_termination
 from deeptrade.types import TransitionBatch
@@ -16,38 +15,38 @@ from deeptrade.types import TransitionBatch
 _DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 def test_activation_functions_gaussian_mlp():
-    
+
     activation_cfg_silu = omegaconf.OmegaConf.create(
         {
             "_target_": "torch.nn.SiLU",
         }
     )
-    
+
     activation_cfg_th = omegaconf.OmegaConf.create(
         {
             "_target_": "torch.nn.Threshold",
             "threshold": 0.5,
             "value": 10,
         }
-    
+
     )
-    
+
     model_silu = deeptrade.models.GaussianMLP(
         1, 1, _DEVICE, num_layers=2, activation_fn_cfg=activation_cfg_silu
     )
-    
+
     model_th = deeptrade.models.GaussianMLP(
         1, 1, _DEVICE, num_layers=2, activation_fn_cfg=activation_cfg_th
     )
-    
+
     hidden_layer = model_silu.hidden_layers
     silu = torch.nn.SiLU()
     assert(str(hidden_layer[0][1]) == str(silu))
-    
+
     hidden_layer = model_th.hidden_layers
     threshold = torch.nn.Threshold(0.5, 10)
     assert(str(hidden_layer[0][1]) == str(threshold))
-    
+
 def test_basic_ensemble_gaussian_forward():
     model_in_size = 2
     model_out_size = 2
@@ -88,7 +87,7 @@ def test_basic_ensemble_gaussian_forward():
     assert model_out.shape == torch.Size([2, batch_size, model_out_size])
     assert model_out[0].sum().item() == expected_tensor_sum
     assert model_out[1].sum().item() == 2 * expected_tensor_sum
-    
+
 _OUTPUT_FACTOR = 10
 
 def _create_gaussian_ensemble_mock(ensemble_size, as_float=False):
@@ -196,7 +195,7 @@ def test_gaussian_mlp_ensemble_expectation_propagation():
 
 _MOCK_OBS_DIM = 1
 _MOCK_ACT_DIM = 1
- 
+
 class MockEnv:
     observation_space = (_MOCK_OBS_DIM,)
     action_space = (_MOCK_ACT_DIM,)

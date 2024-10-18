@@ -3,16 +3,13 @@ import pathlib
 import tempfile
 
 import gymnasium as gym
-import hydra
-import numpy as np
 import torch
 import yaml
 from omegaconf import OmegaConf
 
 import deeptrade.env
-import deeptrade.diagnostics as diagnostics
-import deeptrade.planning as planning
 import deeptrade.util.common
+from deeptrade import diagnostics, planning
 
 _REPO_DIR = pathlib.Path(os.getcwd())
 _DIR = tempfile.TemporaryDirectory()
@@ -33,7 +30,6 @@ _CONF_DIR = pathlib.Path(_REPO_DIR) / "examples" / "backtests" / "configs"
 # Creating config files
 with open(
     _REPO_DIR / _CONF_DIR / "dynamics_model" / "gaussian_mlp_ensemble.yaml",
-    "r",
 ) as f:
     _MODEL_CFG = yaml.safe_load(f)
 
@@ -61,9 +57,9 @@ _CFG_DICT = {
     "device": "cuda:0" if torch.cuda.is_available() else "cpu",
 }
 
-with open(_REPO_DIR / _CONF_DIR / "algorithm" / "pets.yaml", "r") as f:
+with open(_REPO_DIR / _CONF_DIR / "algorithm" / "pets.yaml") as f:
     _PETS_ALGO_CFG = yaml.safe_load(f)
-with open(_REPO_DIR / _CONF_DIR / "action_optimizer" / "cem.yaml", "r") as f:
+with open(_REPO_DIR / _CONF_DIR / "action_optimizer" / "cem.yaml") as f:
     _CEM_CFG = yaml.safe_load(f)
 
 _CFG_DICT["algorithm"].update(_PETS_ALGO_CFG)
@@ -111,7 +107,7 @@ def test_visualizer():
         OmegaConf.save(_CFG, f)
 
     print(f"cfg: {_CFG}, model_dir: {_DIR.name}")
-    
+
     visualizer = diagnostics.DataVisualizer(
         5, _DIR.name, agent_dir=_DIR.name, num_steps=5, num_model_samples=5
     )

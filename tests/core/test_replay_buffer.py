@@ -3,13 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import numpy as np
-import pytest
-import torch
+
+from deeptrade.types import TransitionBatch
 
 # import deeptrade.third_party.pytorch_sac.replay_buffer as sac_buffer
 # import deeptrade.third_party.pytorch_sac_pranz24.replay_memory as sac_p24_buffer
-import deeptrade.util.replay_buffer as replay_buffer
-from deeptrade.types import TransitionBatch
+from deeptrade.util import replay_buffer
 
 
 def test_transition_batch_getitem():

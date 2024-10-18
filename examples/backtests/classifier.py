@@ -1,29 +1,29 @@
+from pathlib import Path
+
+import hydra
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import wandb
-import hydra
-import numpy as np
-import pandas as pd
-from omegaconf import DictConfig, OmegaConf
-from PIL import Image
-from pathlib import Path
-import matplotlib.pyplot as plt
+from omegaconf import OmegaConf
 
-import deeptrade.models as models
 import deeptrade.util.common as common_utils
-import deeptrade.util.replay_buffer as replay_buffer
+from deeptrade import models
+from deeptrade.util import replay_buffer
+
 
 class Workspace:
-    
+
     def __init__(self, cfg):
-        
+
         # Setup dir configs
         self.work_dir = Path.cwd()
         self.log_dir = cfg.log_dir
         self.cfg = cfg
-        
+
         # Seeding
         np.random.seed(self.cfg.seed)
-        
+
         # Device
         if self.cfg.device == "cuda":
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,19 +41,19 @@ class Workspace:
         else:
             print("Data type not supported")  # Space to load real asset instrument data
 
-        
+
     def create_data(self):
-        
+
         x_data = np.linspace(0, self.cfg.n_days, self.cfg.n_days)
         y_data = [0]
         for day in range(1, self.cfg.n_days):
             y_data.append(y_data[-1] + np.random.normal(0, self.cfg.var))
         y_data = np.array(y_data)
         return x_data, y_data
-        
-        
+
+
     def run(self):
-        
+
         for ids in range(2, (self.x_data.shape[0]//self.cfg.n_forecast)-1):
             x = self.x_data[:ids*self.cfg.n_forecast]
             y = self.y_data[:ids*self.cfg.n_forecast]
@@ -79,21 +79,21 @@ class Workspace:
                 activation_fn_cfg={"_target_": "torch.nn.SiLU"},
                 ensemble_size=self.cfg.num_members
             )
-            
+
             wrapper = models.OneDTransitionRewardModel(ensemble, target_is_delta=False, normalize=True, learned_rewards=False)
-    
+
             wrapper.update_normalizer(train_buffer.get_all())
             trainer = models.ModelTrainer(wrapper, optim_lr=0.001, weight_decay=5e-5)
             train_losses , val_losses = trainer.train(train_dataset, val_dataset, num_epochs=self.cfg.num_epochs)
-            
+
             x_tensor = torch.from_numpy(x).unsqueeze(1).float().to(self.device)
             x_tensor = wrapper.input_normalizer.normalize(x_tensor)
-            
+
             with torch.no_grad():
                 y_pred, y_pred_logvar = ensemble(x_tensor)
                 y_pred = y_pred[..., 0]
                 y_pred_logvar = y_pred_logvar[..., 0]
-            
+
             y_var_epi = y_pred.var(dim=0).cpu().numpy()
             y_var = y_pred_logvar.exp()
             y_pred = y_pred.mean(dim=0).cpu().numpy()
@@ -108,7 +108,7 @@ class Workspace:
             ax.fill_between(x, y_pred, y_pred + 2 * y_std, color='b', alpha=0.2)
             ax.fill_between(x, y_pred - 2 * y_std, y_pred, color='b', alpha=0.2)
             # plt.axis([-12, 12, -2.5, 2.5])
-            
+
             wandb.log({"train/prediction": wandb.Image(fig)})
 
             if self.cfg.use_wandb:
@@ -121,7 +121,6 @@ class Workspace:
                     "train/train_losses": np.array(train_losses)[-10:].mean(),
                     "train/val_losses": np.array(val_losses)[-10:].mean()
                 })
-        return
 
 
 @hydra.main(config_path='configs/.', config_name='default', version_base="1.1")
@@ -129,8 +128,7 @@ def main(cfg):
     # from deeptrade.examples.classifier import Workspace as W
     workspace = Workspace(cfg)
     workspace.run()
-    
+
 
 if __name__=="__main__":
     main()
-    

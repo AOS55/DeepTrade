@@ -1,19 +1,15 @@
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
-import omegaconf
-import torch
-import torch.optim as optim
-
-import mbrl.models as models
 import mbrl.util.common as common_utils
-import mbrl.util.replay_buffer as replay_buffer
+import numpy as np
+import torch
+from mbrl import models
+from mbrl.util import replay_buffer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
-    
+
     x_data = np.linspace(-10, 10, 10000)
     y_data = np.sin(x_data)
     train_size = 2000
@@ -22,10 +18,10 @@ def main():
     y_train = np.zeros(2*train_size)
     x_val = np.zeros(2*val_size)
     y_val = np.zeros(2*val_size)
-    
+
     # Half with lower noise
     train_val_idx_1 = np.random.choice(list(range(1200, 3500)), size=train_size+val_size, replace=False)
-    
+
     mag = 0.05
     x_train[:train_size] = x_data[train_val_idx_1[:train_size]]
     y_train[:train_size] = y_data[train_val_idx_1[:train_size]] + mag * np.random.randn(train_size)
@@ -33,22 +29,22 @@ def main():
     y_val[:val_size] = y_data[train_val_idx_1[train_size:]] + mag * np.random.randn(val_size)
 
     # Half with higher noise
-    train_val_idx_2 = np.random.choice(list(range(6500, 8800)), 
-                                    size=train_size + val_size, 
+    train_val_idx_2 = np.random.choice(list(range(6500, 8800)),
+                                    size=train_size + val_size,
                                     replace=False)
     mag = 0.20
     x_train[train_size:] = x_data[train_val_idx_2[:train_size]]
     y_train[train_size:] = y_data[train_val_idx_2[:train_size]] + mag * np.random.randn(train_size)
     x_val[val_size:] = x_data[train_val_idx_2[train_size:]]
     y_val[val_size:] = y_data[train_val_idx_2[train_size:]] + mag * np.random.randn(val_size)
-    
+
     plt.figure(figsize=(16, 8))
     plt.plot(x_data, y_data, x_train, y_train, '.', x_val, y_val, 'o', markersize=4)
     plt.savefig('gaussian_data.pdf')
-    
+
     train_size *=2
     val_size *= 2
-    
+
     num_members = 5
     train_buffer = replay_buffer.ReplayBuffer(train_size, (1,), (0,))
     val_buffer = replay_buffer.ReplayBuffer(val_size, (1,), (0,))
@@ -60,19 +56,19 @@ def main():
         train_buffer, 2048, 0, ensemble_size=num_members, shuffle_each_epoch=True)
     val_dataset, _ = common_utils.get_basic_buffer_iterators(
         val_buffer, 2048, 0, ensemble_size=1)
-    
+
     ensemble = models.GaussianMLP(
         1, # input size
         1, # output size
-        device, 
-        num_layers=3, 
-        hid_size=64, 
-        activation_fn_cfg={"_target_": "torch.nn.SiLU"}, 
+        device,
+        num_layers=3,
+        hid_size=64,
+        activation_fn_cfg={"_target_": "torch.nn.SiLU"},
         ensemble_size=num_members
     )
     wrapper = models.OneDTransitionRewardModel(
         ensemble, target_is_delta=False, normalize=True, learned_rewards=False)
-    
+
     wrapper.update_normalizer(train_buffer.get_all())
     trainer = models.ModelTrainer(wrapper, optim_lr=0.001, weight_decay=5e-5)
     train_losses, val_losses = trainer.train(
@@ -85,7 +81,7 @@ def main():
     ax[1].set_xlabel("epoch")
     ax[1].set_ylabel("val loss (mse)")
     plt.savefig('gaussian_losses.pdf')
-    
+
     x_tensor = torch.from_numpy(x_data).unsqueeze(1).float().to(device)
     x_tensor = wrapper.input_normalizer.normalize(x_tensor)
 
