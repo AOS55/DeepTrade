@@ -79,7 +79,7 @@ The classical [Markov Decision Process](https://en.wikipedia.org/wiki/Markov_dec
 
 The environment has the following key components:
 
-<img align="center" src="https://github.com/AOS55/DeepTrade/blob/assets/assets/DeepTrade-Env.svg" width="500" alt="Agent/Env loop">
+<img align="center" src="https://github.com/AOS55/DeepTrade/blob/assets/assets/DeepTrade-Env.png" width="500" alt="Agent/Env loop">
 
 ### Environment
 
