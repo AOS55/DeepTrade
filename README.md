@@ -76,6 +76,11 @@ The classical [Markov Decision Process](https://en.wikipedia.org/wiki/Markov_dec
     - `HoldAgent`: A simple buy and hold strategy.
     - `EWMACAgent`: Exponential Weighted Moving Average Crossover, momentum based trend following.
     - `BreakoutAgent`: Breakout strategy, based on the high and low of the previous `n` periods.
+
+The environment has the following key components:
+
+<img align="center" src="https://github.com/AOS55/DeepTrade/blob/assets/assets/DeepTrade-Env.svg" width="500" alt="Agent/Env loop">
+
 ### Environment
 
 ```python
