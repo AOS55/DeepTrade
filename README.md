@@ -1,4 +1,4 @@
-<style>
+<!-- <style>
 img
 {
     display:block; 
@@ -7,7 +7,7 @@ img
     margin-right:auto;
     width:60%;
 }
-</style> 
+</style>  -->
 
 # DeepTrade
 
@@ -17,8 +17,7 @@ Deeptrade is a backtesting system and library designed to test and evaluate mach
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- [Pytorch](https://pytorch.org) 1.9.0 or higher
+DeepTrade relies on python 3.8 or higher and [Pytorch](https://pytorch.org) 1.9.0 or higher.
 
 We recommend using a [conda environment](https://docs.anaconda.com/miniconda/miniconda-install/) to manage dependencies. You can create a new environment with the following command:
 
@@ -88,11 +87,13 @@ The classical [Markov Decision Process](https://en.wikipedia.org/wiki/Markov_dec
     - `EWMACAgent`: Exponential Weighted Moving Average Crossover, momentum based trend following.
     - `BreakoutAgent`: Breakout strategy, based on the high and low of the previous `n` periods.
 
-The environment has the following key components:
+The overall environment-agent loop is shown below:
 
 <img align="center" src="https://github.com/AOS55/DeepTrade/blob/assets/assets/DeepTrade-Env.png" width="500" alt="Agent/Env loop">
 
 ### Environment
+
+The following is a basic example of how to instantiate an environment with `deeptrade.env`:
 
 ```python
 import gymnasium as gym
@@ -108,9 +109,17 @@ while not truncated or not terminated:
     print(f"Reward: {reward}")
 ```
 
-### Agent
+<!-- ### Agent
+
+```python
+import deeptrade.model
+
+``` -->
+
 
 ## Contributing
+
+Please read the [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
 ## Citing
 
