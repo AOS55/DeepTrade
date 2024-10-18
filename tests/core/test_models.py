@@ -286,7 +286,10 @@ def test_model_env_expectation_random():
         seen = set()
         # Check that all models produced some output in the batch
         for j, val in enumerate(diff):
-            v = int(val)
+            if isinstance(val, np.ndarray):
+                v = int(val.item())  # Extracts the single element from the array
+            else:
+                v = int(val)
             assert v in member_incs
             seen.add(v)
             history[j] += str(member_incs.index(v))
@@ -318,7 +321,10 @@ def test_model_env_expectation_fixed():
         seen = set()
         # Check that all models produced some output in the batch
         for j, val in enumerate(diff):
-            v = int(val)
+            if isinstance(val, np.ndarray):
+                v = int(val.item())  # Extracts the single element from the array
+            else:
+                v = int(val)
             assert v in member_incs
             seen.add(v)
             history[j] += str(member_incs.index(v))
