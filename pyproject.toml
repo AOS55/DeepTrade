@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = [
     {name="Alexander Quessy", email="alexander@quessy.io"},
 ]
-description = "A simplified trading system for backtesting Model Based RL strategies"
+description = "A simple trading system for backtesting Model Based RL strategies"
 readme = "README.md"
 requires-python = ">=3.9"
 
