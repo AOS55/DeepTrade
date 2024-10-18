@@ -1,14 +1,3 @@
-<!-- <style>
-img
-{
-    display:block; 
-    float:none; 
-    margin-left:auto;
-    margin-right:auto;
-    width:60%;
-}
-</style>  -->
-
 [![build](https://github.com/AOS55/deeptrade/workflows/build/badge.svg)](https://github.com/AOS55/deeptrade/actions?query=workflow%3Abuild)
 [![Downloads](https://img.shields.io/pypi/dm/deeptrade)](https://pypi.org/project/deeptrade/)
 [![PyPi Version](https://img.shields.io/pypi/v/deeptrade)](https://pypi.org/project/deeptrade/)
@@ -34,8 +23,11 @@ conda activate deeptrade-env
 
 #### Standard Installation
 
+> [!WARNING]
+> The project is on PyPI as `deeptrade-mbrl`.
+
 ```bash
-pip install deeptrade
+pip install deeptrade-mbrl
 ```
 
 #### Development Installation
