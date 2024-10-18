@@ -4,7 +4,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import logger, spaces
 from gymnasium.error import DependencyNotInstalled
-from deeptrade.util.finance import calculate_log_returns
+from deeptrade.util.finance import calculate_log_returns, calculate_simple_returns
 
 class Account:
     
@@ -39,7 +39,7 @@ class SingleInstrumentEnv(gym.Env):
                  window: int = 10,
                  end_time: Optional[int] = None,
                  seed: Optional[int] = None,
-                 price_gen_info: dict = {"mean": 0.0, "std": 1.0, "n_days": 1000}):
+                 price_gen_info: dict = {"starting_price": 0.0, "mean": 0.0, "std": 1.0, "n_days": 1000}):
         
         super().reset(seed=seed)
         if window > start_time-1:
@@ -64,8 +64,8 @@ class SingleInstrumentEnv(gym.Env):
         self.period = period  # how long the position is held over before the next action
         self.update_state()
         
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.state.shape[0],), dtype=np.float32)
-        self.action_space = spaces.Box(low=-10.0, high=10.0, shape=(1,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.state.shape[0],), dtype=np.float64)
+        self.action_space = spaces.Box(low=-10.0, high=10.0, shape=(1,), dtype=np.float64)
     
     def step(self, action: float):
         
@@ -125,7 +125,7 @@ class SingleInstrumentEnv(gym.Env):
     def _create_price_data(self, price_gen_info: dict):
         """Create price data from random walk."""
         # rng = np.random.default_rng(price_gen_info["price_seed"])
-        y_data = [0]
+        y_data = [price_gen_info["starting_price"]]
         for _ in range(1, price_gen_info["n_days"]):
             y_data.append(y_data[-1] + self.np_random.normal(price_gen_info["mean"], price_gen_info["std"]))
         return y_data
@@ -135,8 +135,9 @@ class SingleInstrumentEnv(gym.Env):
         return np.array(self.price_data[time-self._window:time])
     
     def update_state(self):
-        log_returns = calculate_log_returns(self.prices)
-        self.state = np.concat([log_returns, self.account.position, self.account.margin])
+        # log_returns = calculate_log_returns(self.prices)
+        simple_returns = calculate_simple_returns(self.prices)
+        self.state = np.concat([simple_returns, self.account.position, self.account.margin])
     
     def render(self):
         pass
