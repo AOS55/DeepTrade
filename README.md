@@ -1,3 +1,14 @@
+<style>
+img
+{
+    display:block; 
+    float:none; 
+    margin-left:auto;
+    margin-right:auto;
+    width:60%;
+}
+</style> 
+
 # DeepTrade
 
 Deeptrade is a backtesting system and library designed to test and evaluate machine learning based strategies.
