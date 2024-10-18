@@ -1,6 +1,6 @@
 # DeepTrade
 
-Deeptrade is a backtesting system and library designed to test and evaluate machine learning based strategies. It is 
+Deeptrade is a backtesting system and library designed to test and evaluate machine learning based strategies.
 
 ## Getting Started
 
