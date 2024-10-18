@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-from deeptrade.env import HoldAgent, EWMACAgent, BreakoutAgent
+from deeptrade.env import HoldAgent, EWMACAgent
 
 def _make_test_env():
     return gym.make("SingleInstrument-v0")
@@ -18,6 +18,6 @@ def _test_agent(env, agent):
 
 def test_agents():
     env = _make_test_env()
-    agents = [HoldAgent, EWMACAgent, BreakoutAgent]
+    agents = [HoldAgent, EWMACAgent]
     for agent in agents:
         _test_agent(env, agent)
