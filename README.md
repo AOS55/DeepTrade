@@ -1,6 +1,6 @@
 [![build](https://github.com/AOS55/deeptrade/workflows/build/badge.svg)](https://github.com/AOS55/deeptrade/actions?query=workflow%3Abuild)
-[![Downloads](https://img.shields.io/pypi/dm/deeptrade)](https://pypi.org/project/deeptrade/)
-[![PyPi Version](https://img.shields.io/pypi/v/deeptrade)](https://pypi.org/project/deeptrade/)
+[![Downloads](https://img.shields.io/pypi/dm/deeptrade-mbrl)](https://pypi.org/project/deeptrade-mbrl/)
+[![PyPi Version](https://img.shields.io/pypi/v/deeptrade-mbrl)](https://pypi.org/project/deeptrade-mbrl/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b115af01c853420cac4503e23e783f96)](https://app.codacy.com/gh/AOS55/DeepTrade/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 # DeepTrade
 
