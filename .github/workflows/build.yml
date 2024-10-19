@@ -39,4 +39,5 @@ jobs:
       run: hatch build
     - name: Publish on PyPI
       if: github.ref == 'refs/heads/master'
-      run: hatch publish
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # run: hatch publish
