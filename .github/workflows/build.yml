@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       id-token: write
 
@@ -40,4 +41,3 @@ jobs:
     - name: Publish on PyPI
       if: github.ref == 'refs/heads/master'
       uses: pypa/gh-action-pypi-publish@release/v1
-      # run: hatch publish
