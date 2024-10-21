@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: release
+    environment: build
     permissions:
       id-token: write
 
@@ -38,6 +38,6 @@ jobs:
       run: hatch run test:test --cov=./ --cov-report=xml 
     - name: Build dist
       run: hatch build
-    - name: Publish on PyPI
-      if: github.ref == 'refs/heads/master'
-      uses: pypa/gh-action-pypi-publish@release/v1
+    # - name: Publish on PyPI
+    #   if: github.ref == 'refs/heads/master'
+    #   uses: pypa/gh-action-pypi-publish@release/v1
