@@ -23,13 +23,16 @@ def _freeze_instrument_gym_env(env_name):
             actions.append(action)
             if terminated or truncated:
                 break
-
-    print(env.unwrapped.time)
+    
     for a in actions:
         next_obs, reward, _, _, _ = env.step(a)
         ref_obs = seen_obses.pop(0)
         ref_reward = seen_rewards.pop(0)
-        np.testing.assert_array_almost_equal(next_obs, ref_obs)
+        if type(next_obs) == dict:
+            for k in next_obs.keys():
+                np.testing.assert_array_almost_equal(next_obs[k], ref_obs[k])
+        else:
+            np.testing.assert_array_almost_equal(next_obs, ref_obs)
         assert reward == pytest.approx(ref_reward)
 
 
@@ -57,10 +60,12 @@ def _transfer_state(env_name):
 
 def test_freeze():
     _freeze_instrument_gym_env("SingleInstrument-v0")
+    _freeze_instrument_gym_env("MultiInstrument-v0")
 
 
 def test_get_and_set_state():
     _get_and_set_state("SingleInstrument-v0")
+    _get_and_set_state("MultiInstrument-v0")
 
 
 if __name__=="__main__":
