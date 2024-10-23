@@ -6,6 +6,9 @@
 
 Deeptrade is a backtesting system and library designed to test and evaluate machine learning based strategies.
 
+> [!NOTE]
+> :construction: DeepTrade is still under construction :construction:
+
 ## Getting Started
 
 ### Prerequisites
@@ -50,7 +53,10 @@ python -m pytest tests/instruments
 
 ## Usage
 
-The core idea of DeepTrade is to backtest machine learning trading strategies based on either synthetic or real data. Backtesting is split into 2 datasets, training data, available at the start of the theoretical trading period and backtest data used to evaluate the strategy which is where you started the strategy from. The following provides an overview of the basic components of the library, examples of various backtests are provided in the [notebooks](notebooks) directory.
+The core idea of DeepTrade is to backtest machine learning trading strategies based on either synthetic or real data. Backtesting is split into 2 datasets, training data, available at the start of the theoretical trading period and backtest data used to evaluate the strategy which is where you started the strategy from. The following provides an overview of the basic components of the library, examples of various backtests are provided in the [notebooks](notebooks) directory. These include:
+
+- [Basic Rules](notebooks/basic_rules.ipynb): An example of how the basic environment rollout using classical trading rules.
+- [Multi-Instrument](notebooks/multi_instrument.ipynb): An example of how to use the multi-instrument environment. This shows how to construct a multi-asset portfolio and plots the optimal portfolio allocation weights. 
 
 The train-backtest split is shown below:
 
