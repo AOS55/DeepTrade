@@ -36,8 +36,8 @@ def create_handler(cfg: Union[Dict, omegaconf.ListConfig, omegaconf.DictConfig])
 
     target = cfg.overrides.env_cfg.get("_target_")
     if "instrument" in target:
-      from deeptrade.util.instrument import InstrumentEnvHandler
-      return InstrumentEnvHandler()
+        from deeptrade.util.instrument import InstrumentEnvHandler
+        return InstrumentEnvHandler()
     else:
         raise NotImplementedError
 
@@ -52,8 +52,12 @@ def create_handler_from_str(env_name: str):
     Returns:
         (EnvHandler): A handler for the associated gym environment
     """
-    if "instrument" or "Instrument" in env_name:
+    print(f"env_name: {env_name}")
+    if "SingleInstrument" in env_name:
       from deeptrade.util.instrument import InstrumentEnvHandler
       return InstrumentEnvHandler()
+    if "MultiInstrument" in env_name:
+        from deeptrade.util.instrument import MultiInstrumentEnvHandler
+        return MultiInstrumentEnvHandler()
     else:
         raise NotImplementedError
