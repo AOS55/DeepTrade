@@ -1,9 +1,10 @@
-from typing import Tuple
+from typing import Tuple, Dict
 
 import gymnasium as gym
 import numpy as np
 
 from deeptrade.env import SingleInstrumentEnv
+from deeptrade.env import MultiInstrumentEnv
 from deeptrade.util.env import EnvHandler, Freeze
 
 
@@ -11,6 +12,9 @@ def _is_instrument_env(env: gym.wrappers.TimeLimit) -> bool:
     env = env.unwrapped
     return isinstance(env, SingleInstrumentEnv)
 
+def _is_multiinstrument_env(env: gym.wrappers.TimeLimit) -> bool:
+    env = env.unwrapped
+    return isinstance(env, MultiInstrumentEnv)
 
 # TODO: Add a test for this to make sure behaves as expected
 class FreezeInstrumentEnv(Freeze):
@@ -53,6 +57,26 @@ class FreezeInstrumentEnv(Freeze):
     def __exit__(self, *args):
         self._env.unwrapped.account.position = self._init_state[-2]
         self._env.unwrapped.account.margin = self._init_state[-1]
+        self._env.unwrapped.time = self._time
+
+class FreezeMultiInstrumentEnv(Freeze):
+    
+    def __init__(self, env: gym.wrappers.TimeLimit):
+        self._env = env
+        self._init_state = None
+        self._step_count: int = 0
+        self._time: int = 0
+        
+        if not _is_multiinstrument_env(env):
+            raise ValueError("env must be a MultiInstrument environment.")
+        
+    def __enter__(self):
+        self._init_state = self._env.unwrapped.state
+        self._time = self._env.unwrapped.time
+        
+    def __exit__(self, *args):
+        self._env.unwrapped.account.positions = self._init_state["positions"]
+        self._env.unwrapped.account.margin = self._init_state["margin"]
         self._env.unwrapped.time = self._time
 
 
@@ -109,4 +133,35 @@ class InstrumentEnvHandler(EnvHandler):
         """
         env.unwrapped.account.position = state[0][-1]
         env.unwrapped.account.margin = state[0][-2]
+        env.unwrapped.time = state[1]
+
+
+class MultiInstrumentEnvHandler(EnvHandler):
+    
+    freeze = FreezeMultiInstrumentEnv
+    
+    @staticmethod
+    def is_correct_env_type(env):
+        return _is_multiinstrument_env(env)
+    
+    @staticmethod
+    def make_env_from_str(env_name) -> gym.Env:
+        
+        if env_name == "MultiInstrument-v0":
+            env = gym.make("MultiInstrument-v0")
+
+        env = gym.wrappers.TimeLimit(env, max_episode_steps=1000)
+        
+        return env
+    
+    @staticmethod
+    def get_current_state(env):
+        
+        return (env.unwrapped.state, env.unwrapped.time)
+    
+    @staticmethod
+    def set_env_state(state, env):
+        
+        env.unwrapped.account.positions = state[0]["positions"]
+        env.unwrapped.account.margin = state[0]["margin"]
         env.unwrapped.time = state[1]
