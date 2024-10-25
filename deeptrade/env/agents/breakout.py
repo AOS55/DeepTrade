@@ -9,10 +9,15 @@ class BreakoutAgent:
     def __init__(self,
                  env: gym.Env,
                  lookback_period: int = 10,
-                 smooth: Optional[int] = None):
+                 smooth: Optional[int] = None,
+                 pos_size: float = 1.0,  # TODO: Add scalable functionality
+                 instrument: Optional[int] = 0):
 
         self._env = env
+        self._env_type = type(env.unwrapped)
+        self.instrument = instrument
         self.lookback_period = lookback_period
+        self.pos_size = pos_size
 
         # Setup smoothing
         if smooth is None:
@@ -48,9 +53,31 @@ class BreakoutAgent:
     
     def act(self, state: np.ndarray) -> np.array:
         time = self._env.unwrapped.time
-        prices = self._env.unwrapped.price_data
-        roll_max, roll_min = self.calculate_rolling_extremes(time, prices)
-        roll_mean = (roll_max + roll_min) / 2.0
-        output = 40.0 * ((prices[time] - roll_mean) / (roll_max - roll_min))
-        # smoothed_output = self.numpy_ewma(output, self.smooth)
-        return np.array([output.item()])
+        
+        from deeptrade.env import MultiInstrumentEnv
+        if self._env_type == MultiInstrumentEnv:
+            
+            prices = self._env.unwrapped.prices_data
+            actions = np.zeros_like(state["positions"])
+            if self.instrument is None:
+                for idp in range(len(state["positions"])):
+                    roll_max, roll_min = self.calculate_rolling_extremes(time, prices[idp])
+                    roll_mean = (roll_max + roll_min) / 2.0
+                    output = self.pos_size * 40.0 * ((prices[idp][time] - roll_mean) / (roll_max - roll_min))
+                    # smoothed_output = self.numpy_ewma(output, self.smooth)
+                    actions[idp] = output
+            else:
+                roll_max, roll_min = self.calculate_rolling_extremes(time, prices[self.instrument])
+                roll_mean = (roll_max + roll_min) / 2.0
+                output = self.pos_size * 40.0 * ((prices[self.instrument][time] - roll_mean) / (roll_max - roll_min))
+                # smoothed_output = self.numpy_ewma(output, self.smooth)
+                actions[self.instrument] = output
+            return actions
+    
+        else:
+            prices = self._env.unwrapped.price_data
+            roll_max, roll_min = self.calculate_rolling_extremes(time, prices)
+            roll_mean = (roll_max + roll_min) / 2.0
+            output = self.pos_size * 40.0 * ((prices[time] - roll_mean) / (roll_max - roll_min))
+            # smoothed_output = self.numpy_ewma(output, self.smooth)
+            return np.array([output.item()])
