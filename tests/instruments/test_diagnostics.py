@@ -3,6 +3,7 @@ import pathlib
 import tempfile
 
 import gymnasium as gym
+import numpy as np
 import torch
 import yaml
 from omegaconf import OmegaConf
@@ -20,7 +21,13 @@ pathlib.Path.mkdir(_HYDRA_DIR)
 _ENV_NAME = "SingleInstrument-v0"
 _ENV_CONFIG = {
     "_target_": "deeptrade.env.SingleInstrumentEnv",
-    "price_gen_info": {"starting_price": 1000.0, "mean": 0.0, "std": 0.5, "n_days": 100},
+    
+    "price_gen_info": {
+                    "name": "GBM",
+                    "S0": np.array([100.0]),
+                    "mu": np.array([0.1]),
+                    "cov_matrix": np.array([1.0]),
+                    "n_steps": 1000},
     }
 _ENV = gym.make(_ENV_NAME, price_gen_info=_ENV_CONFIG["price_gen_info"])
 _OBS_SHAPE = _ENV.observation_space.shape
