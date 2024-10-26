@@ -33,14 +33,20 @@ class Account:
 class SingleInstrumentEnv(gym.Env):
 
     def __init__(self,
-                 price_data: Optional[np.ndarray] = None,
+                 prices_data: Optional[np.ndarray] = None,
                  period: int = 1,
                  starting_cash: float = 1000.0,
                  start_time: int = 11,
                  window: int = 10,
                  end_time: Optional[int] = None,
                  seed: Optional[int] = None,
-                 price_gen_info: dict = {"starting_price": 0.0, "mean": 0.0, "std": 1.0, "n_days": 1000}):
+                 dt: float = 1.0,
+                 price_gen_info: dict = {
+                    "name": "GBM",
+                    "S0": np.array([100.0]),
+                    "mu": np.array([1.0]),
+                    "cov_matrix": np.array([1.0]),
+                    "n_steps": 1000}):
 
         super().reset(seed=seed)
         if window > start_time-1:
@@ -48,21 +54,23 @@ class SingleInstrumentEnv(gym.Env):
         if window < period:
             raise ValueError(f"window {window} must be greater than period {period}")
 
+        self.period = period
+        self.dt = dt
+        
         # If price data is not provided, create price data
-        if price_data is None:
-            self.price_data = self._create_price_data(price_gen_info)
+        if prices_data is None:
+            self.prices_data = self._create_prices_data(price_gen_info)
         else:
-            self.price_data = price_data
+            self.prices_data = prices_data
 
         self._window = window
-        self._end_time = end_time if end_time is not None else len(self.price_data) - 1  # end time step
+        self._end_time = end_time if end_time is not None else len(self.prices_data) - 1  # end time step
 
         self.starting_cash = starting_cash
         self._start_time = start_time
         self.account = Account(cash=self.starting_cash)
         self.time = self._start_time  # current world time
-        self.prices = self._observe_price_data(self.time)  # prices of the instrument at the current time step
-        self.period = period  # how long the position is held over before the next action
+        self.prices = self._observe_prices_data(self.time)  # prices of the instrument at the current time step
         self.update_state()
 
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.state.shape[0],), dtype=np.float64)
@@ -80,7 +88,7 @@ class SingleInstrumentEnv(gym.Env):
 
         # Advance price and action
         self.time += self.period
-        self.prices = self._observe_price_data(self.time)
+        self.prices = self._observe_prices_data(self.time)
         delta_price = self.prices[-1] - self.prices[-1-self.period]
         reward = self.account.position[0] * delta_price
 
@@ -118,26 +126,41 @@ class SingleInstrumentEnv(gym.Env):
 
         self.account = Account(cash=self.starting_cash)
         self.time = self._start_time
-        self.prices = self._observe_price_data(self.time)
+        self.prices = self._observe_prices_data(self.time)
         self.update_state()
 
         return self.state, {}
 
-    def _create_price_data(self, price_gen_info: dict):
+    def _create_prices_data(self, price_gen_info: dict):
         """Create price data from random walk."""
-        # rng = np.random.default_rng(price_gen_info["price_seed"])
-        y_data = [price_gen_info["starting_price"]]
-        for _ in range(1, price_gen_info["n_days"]):
-            y_data.append(y_data[-1] + self.np_random.normal(price_gen_info["mean"], price_gen_info["std"]))
-        return y_data
+        from deeptrade.models import GBM, OU, JDM 
+        if price_gen_info["name"] == "GBM":
+            generator = GBM(**price_gen_info)
+        elif price_gen_info["name"] == "OU":
+            generator = OU(**price_gen_info)
+        elif price_gen_info["name"] == "JDM":
+            generator = JDM(**price_gen_info)
+        else:
+            raise ValueError(f"Time Series process {price_gen_info['name']} not found")
 
-    def _observe_price_data(self, time: int):
+        return generator.generate(self.dt, price_gen_info["n_steps"])[0]
+        
+        # random_shocks = self.np_random.normal(
+        #     loc=price_gen_info["drift"],
+        #     scale=price_gen_info["vol"],
+        #     size=price_gen_info["n_days"])
+        
+        # price_walk = price_gen_info["starting_price"] * np.exp(np.cumsum(random_shocks))
+        # return price_walk
+
+    def _observe_prices_data(self, time: int):
         """Observe price data at a given time over the window size."""
-        return np.array(self.price_data[time-self._window:time])
+        return np.array(self.prices_data[time-self._window:time])
 
     def update_state(self):
         # log_returns = calculate_log_returns(self.prices)
         simple_returns = calculate_simple_returns(self.prices)
+
         self.state = np.concat([simple_returns, self.account.position, self.account.margin])
 
     def render(self):
