@@ -75,7 +75,7 @@ class BreakoutAgent:
             return actions
     
         else:
-            prices = self._env.unwrapped.price_data
+            prices = self._env.unwrapped.prices_data
             roll_max, roll_min = self.calculate_rolling_extremes(time, prices)
             roll_mean = (roll_max + roll_min) / 2.0
             output = self.pos_size * 40.0 * ((prices[time] - roll_mean) / (roll_max - roll_min))
