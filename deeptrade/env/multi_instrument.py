@@ -82,7 +82,7 @@ class MultiInstrumentEnv(gym.Env):
         self._start_time = start_time
         self.account = Account(cash=self._starting_cash, n_instruments=self._n_instruments)
         self.time = self._start_time
-        self.prices = self._observe_price_data(self.time)
+        self.prices = self._observe_prices_data(self.time)
         self.update_state()
         
         self.observation_space = spaces.Dict({
@@ -92,16 +92,16 @@ class MultiInstrumentEnv(gym.Env):
         self.action_space = spaces.Box(low=-10.0, high=10.0, shape=(n_instruments,), dtype=np.float64)
         
     
-    def step(self, actions: np.ndarray) -> tuple:
+    def step(self, action: np.ndarray) -> tuple:
         
         # Update position with action
-        positions = self.account.positions + actions
+        positions = self.account.positions + action
         positions = np.clip(positions, self.action_space.low, self.action_space.high)
         self.account.positions = positions
         
         # Advance price and action
         self.time += self.period
-        self.prices = self._observe_price_data(self.time)
+        self.prices = self._observe_prices_data(self.time)
         delta_prices = self.prices[:, -1] - self.prices[:, -1-self.period]
         reward = self.account.positions * delta_prices
         
@@ -139,7 +139,7 @@ class MultiInstrumentEnv(gym.Env):
             
         self.account = Account(cash=self._starting_cash, n_instruments=self._n_instruments)
         self.time = self._start_time
-        self.prices = self._observe_price_data(self.time)
+        self.prices = self._observe_prices_data(self.time)
         self.update_state()
             
         return self.state, {}
@@ -158,7 +158,7 @@ class MultiInstrumentEnv(gym.Env):
 
         return generator.generate(self.dt, price_gen_info["n_steps"])
     
-    def _observe_price_data(self, time: int) -> np.ndarray:
+    def _observe_prices_data(self, time: int) -> np.ndarray:
         return np.array(self.prices_data)[:, time-self._window:time+1]
     
     def update_state(self):
