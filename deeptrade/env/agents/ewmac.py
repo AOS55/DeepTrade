@@ -49,7 +49,7 @@ class EWMACAgent:
                     actions[self.instrument] = 0.0
             return actions
         else:
-            price_data = self._env.unwrapped.price_data
+            price_data = self._env.unwrapped.prices_data
             fast = np.array(price_data[time-self.fast_period:time]).mean()
             slow = np.array(price_data[time-self.slow_period:time]).mean()
             if (fast > slow) and state[-2] < 1.0:
