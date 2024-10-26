@@ -55,6 +55,6 @@ class EWMACAgent:
             if (fast > slow) and state[-2] < 1.0:
                 return np.array([self.pos_size])
             elif (fast < slow) and state[-2] > -1.0:
-                return np.array([self.pos_size])
+                return np.array([-1 * self.pos_size])
             else:
                 return np.array([0.0])
