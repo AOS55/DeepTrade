@@ -9,6 +9,7 @@ from torch import nn
 
 import deeptrade.models
 import deeptrade.util.replay_buffer
+import deeptrade.models.util as model_utils
 from deeptrade.env.termination_fns import no_termination
 from deeptrade.types import TransitionBatch
 
@@ -426,3 +427,165 @@ def test_model_trainer_batch_callback():
         assert set(counter.keys()) == set(range(num_epochs))
         for i in range(num_epochs):
             assert counter[i] == num_batches
+
+def test_conv2d_encoder_shapes():
+    in_channels = 3
+    config = ((in_channels, 32, 3, 2), (32, 64, 3, 2))
+    activation_cls = [nn.ReLU, nn.SiLU, nn.Tanh]
+    encoding_size = 200
+    image_shape = (32, 32)
+    for act_idx, activation_func in enumerate(["ReLU", "SiLU", "Tanh"]):
+        encoder = model_utils.Conv2dEncoder(
+            config, image_shape, encoding_size, activation_func
+        )
+        assert len(encoder.convs) == len(config)
+        for i, layer_cfg in enumerate(config):
+            assert isinstance(encoder.convs[i][0], nn.Conv2d)
+            assert encoder.convs[i][0].in_channels == layer_cfg[0]
+            assert encoder.convs[i][0].out_channels == layer_cfg[1]
+            assert encoder.convs[i][0].kernel_size == (layer_cfg[2], layer_cfg[2])
+            assert encoder.convs[i][0].stride == (layer_cfg[3], layer_cfg[3])
+            assert isinstance(encoder.convs[i][1], activation_cls[act_idx])
+
+        assert isinstance(encoder.fc, nn.Linear)
+        assert encoder.fc.out_features == encoding_size
+
+        dummy = torch.ones((8, in_channels) + image_shape)
+        out = encoder.forward(dummy)
+        assert out.shape == (8, encoding_size)
+
+
+def test_conv2d_decoder_shapes():
+    in_channels = 64
+    config = ((in_channels, 32, 3, 2), (32, 16, 3, 2))
+    activation_cls = [nn.ReLU, nn.SiLU, nn.Tanh]
+    encoding_size = 200
+    deconv_input_shape = (in_channels, 3, 3)
+    for act_idx, activation_func in enumerate(["ReLU", "SiLU", "Tanh"]):
+        decoder = model_utils.Conv2dDecoder(
+            encoding_size, deconv_input_shape, config, activation_func=activation_func
+        )
+        assert len(decoder.deconvs) == len(config)
+        for i, layer_cfg in enumerate(config):
+            if i < len(config) - 1:
+                deconv = decoder.deconvs[i][0]
+                assert isinstance(decoder.deconvs[i][1], activation_cls[act_idx])
+            else:
+                deconv = decoder.deconvs[i]
+            assert isinstance(deconv, nn.ConvTranspose2d)
+            assert deconv.in_channels == layer_cfg[0]
+            assert deconv.out_channels == layer_cfg[1]
+            assert deconv.kernel_size == (layer_cfg[2], layer_cfg[2])
+            assert deconv.stride == (layer_cfg[3], layer_cfg[3])
+
+        assert isinstance(decoder.fc, nn.Linear)
+        assert decoder.fc.out_features == np.prod(deconv_input_shape)
+
+        dummy = torch.ones(8, encoding_size)
+        out = decoder.forward(dummy)
+        assert out.shape[0] == 8 and out.shape[1] == config[-1][1]
+
+_VAE_OBS_DIM = 20
+     
+@pytest.fixture
+def vae_model():
+    obs_dim = _VAE_OBS_DIM
+    code_dim = 4
+    vae_beta = 1.0
+    return model_utils.VAE(obs_dim, code_dim, vae_beta)    
+
+
+def test_encode_output_shape(vae_model):
+    batch_size = 8
+    sample_input = torch.randn(batch_size, _VAE_OBS_DIM)
+    mu, std, logvar = vae_model.encode(sample_input)
+
+    assert mu.shape == (batch_size, vae_model.code_dim)
+    assert std.shape == (batch_size, vae_model.code_dim)
+    assert logvar.shape == (batch_size, vae_model.code_dim)
+
+    
+def test_forward_output_shape(vae_model):
+    batch_size = 8
+    sample_input = torch.randn(batch_size, _VAE_OBS_DIM)
+    epsilon = torch.randn(batch_size, vae_model.code_dim)
+    output, (mu, logvar, std) = vae_model.forward(sample_input, epsilon)
+    
+    # Assert output and latent variables shapes
+    assert output.shape == sample_input.shape
+    assert mu.shape == (batch_size, vae_model.code_dim)
+    assert logvar.shape == (batch_size, vae_model.code_dim)
+    assert std.shape == (batch_size, vae_model.code_dim)
+
+
+def test_loss_calculation(vae_model):
+
+    batch_size = 8
+    sample_input = torch.randn(batch_size, _VAE_OBS_DIM)
+    loss, log_prob = vae_model.loss(sample_input)
+    
+    # Ensure loss is scalar and log_prob has the correct shape
+    assert isinstance(loss.item(), float)
+    assert log_prob.shape == (batch_size, 1)
+
+
+_TS_VAE_OBS_DIM = (10, 5)
+
+
+@pytest.fixture
+def ts_vae_model():
+    obs_dim = _TS_VAE_OBS_DIM
+    code_dim = 2
+    vae_beta = 1.0
+    model = model_utils.TSVAE(obs_dim, code_dim, vae_beta)
+    return model
+
+
+def test_ts_encode_output_shape(ts_vae_model):
+    batch_size = 8
+    sample_input = torch.randn(batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
+    
+    # Run encoding
+    mu, std, logvar = ts_vae_model.encode(sample_input)
+    
+    # Check shapes of mu, std, and logvar
+    assert mu.shape == (batch_size, ts_vae_model.code_dim)
+    assert std.shape == (batch_size, ts_vae_model.code_dim)
+    assert logvar.shape == (batch_size, ts_vae_model.code_dim)
+
+
+def test_ts_decode_output_shape(ts_vae_model):
+    batch_size = 8
+    latent_code = torch.randn(batch_size, ts_vae_model.code_dim)
+    
+    # Run decoding
+    decoded_output = ts_vae_model.decoder(latent_code)
+    
+    # Check shape of the decoded output
+    assert decoded_output.shape == (batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
+
+
+def test_ts_forward_pass(ts_vae_model):
+    batch_size = 8
+    sample_input = torch.randn(batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
+    epsilon = torch.randn(batch_size, ts_vae_model.code_dim)
+    
+    # Run the forward pass
+    output, (mu, logvar, std) = ts_vae_model.forward(sample_input, epsilon)
+    
+    # Check the shapes
+    assert output.shape == sample_input.shape
+    assert mu.shape == (batch_size, ts_vae_model.code_dim)
+    assert logvar.shape == (batch_size, ts_vae_model.code_dim)
+    assert std.shape == (batch_size, ts_vae_model.code_dim)
+
+def test_ts_loss_calculation(ts_vae_model):
+    batch_size = 8
+    sample_input = torch.randn(batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
+    
+    # Calculate loss
+    loss, log_prob = ts_vae_model.loss(sample_input)
+    
+    # Check that loss is a scalar and log_prob has the correct shape
+    assert isinstance(loss.item(), float)
+    assert log_prob.shape == (batch_size, 1)

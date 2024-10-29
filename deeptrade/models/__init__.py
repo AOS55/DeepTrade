@@ -15,6 +15,8 @@ from .time_series_processes import JDM, GBM, OU
 from .util import (
     Conv2dDecoder,
     Conv2dEncoder,
+    VAE,
+    TSVAE,
     EnsembleLinearLayer,
     truncated_normal_init,
 )

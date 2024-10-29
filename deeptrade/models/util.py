@@ -8,6 +8,7 @@ from typing import List, Tuple
 import numpy as np
 import torch
 from torch import nn as nn
+import torch.nn.functional as F
 
 import deeptrade.types
 import deeptrade.util.math
@@ -211,3 +212,99 @@ class Conv2dDecoder(nn.Module):
         for i in range(len(self.deconvs)):
             deconv = self.deconvs[i](deconv)
         return deconv
+
+
+class VAE(nn.Module):
+    
+    def __init__(self,
+                 obs_dim: int,
+                 code_dim: int,
+                 vae_beta: float,
+                 device: torch.device = torch.device("cpu")):
+        super().__init__()
+        self.code_dim = code_dim
+        
+        self.make_networks(obs_dim, code_dim)
+        self.beta = vae_beta
+        
+        # TODO: add custom weight initialization
+        self.device = device
+        
+    def make_networks(self, obs_dim, code_dim):
+        self.encoder = nn.Sequential(
+            nn.Linear(obs_dim, 150), nn.ReLU(),
+            nn.Linear(150, 150), nn.ReLU(),
+        )
+        self.encoder_mu = nn.Linear(150, code_dim)
+        self.enc_logvar = nn.Linear(150, code_dim)
+        self.decoder = nn.Sequential(
+            nn.Linear(code_dim, 150), nn.ReLU(),
+            nn.Linear(150, 150), nn.ReLU(),
+            nn.Linear(150, obs_dim)
+        )
+    
+    def encode(self, obs):
+        enc_features = self.encoder(obs)
+        mu = self.encoder_mu(enc_features)
+        logvar = self.enc_logvar(enc_features)
+        std = (0.5 * logvar).exp()
+        return mu, std, logvar
+
+    def forward(self, obs, epsilon):
+        mu, logvar, stds = self.encode(obs)
+        code = epsilon * stds + mu
+        obs_distr_params = self.decoder(code)
+        return obs_distr_params, (mu, logvar, stds)
+
+    def loss(self, obs):
+        # TODO: Does this need seeding?
+        epsilon = torch.randn([obs.size(0), self.code_dim]).to(self.device) 
+        obs_distr_params, (mu, logvar, stds) = self.forward(obs, epsilon)
+        kle = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
+        log_prob = F.mse_loss(obs, obs_distr_params, reduction='none')
+        loss = self.beta * kle + log_prob.mean()
+        return loss, log_prob.sum(list(range(1, len(log_prob.shape)))).view(log_prob.shape[0], 1)
+
+
+class TSVAE(VAE):
+    
+    def make_networks(self, obs_shape, code_dim):
+        print(f"obs_shape: {obs_shape}") 
+        self.seq_len, num_features = obs_shape
+        
+        self.encoder = nn.Sequential(
+            nn.LSTM(input_size=num_features, hidden_size=150, num_layers=2, batch_first=True),
+            nn.Flatten(),
+        )
+
+        self.enc_mu = nn.Linear(150, code_dim)
+        self.enc_logvar = nn.Linear(150, code_dim)
+        
+        self.decoder_input = nn.Linear(code_dim, 150)
+        self.decoder_lstm = nn.LSTM(input_size=150, hidden_size=num_features, num_layers=2, batch_first=True)
+        
+    def encode(self, obs):
+        
+        lstm_out, _ = self.encoder[0](obs)
+        enc_features = lstm_out[:, -1, :]
+        enc_features = self.encoder[1](enc_features)
+        
+        mu = self.enc_mu(enc_features)
+        logvar = self.enc_logvar(enc_features)
+        std = (0.5 * logvar).exp()
+        
+        return mu, std, logvar
+    
+    def decoder(self, code):
+        # self.seq_len, num_features = obs_shape
+        decoder_hidden = self.decoder_input(code)
+        h_0 = decoder_hidden.unsqueeze(0).repeat(2, 1, 1)  # (num_layers, batch_size, 150)
+        c_0 = torch.zeros_like(h_0)
+        dec_input = torch.zeros((code.size(0), self.seq_len, 150), device=self.device)
+        dec_output, _ = self.decoder_lstm(dec_input, (h_0, c_0))
+        return dec_output
+        
+        decoder_input = self.decoder_input(code).unsqueeze(1).repeat(1, self.seq_len, 1)
+        dec_output, _ = self.decoder_lstm(decoder_input)
+        return dec_output
+
