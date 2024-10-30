@@ -251,60 +251,109 @@ class VAE(nn.Module):
         return mu, std, logvar
 
     def forward(self, obs, epsilon):
-        mu, logvar, stds = self.encode(obs)
+        mu, stds, logvar = self.encode(obs)
         code = epsilon * stds + mu
         obs_distr_params = self.decoder(code)
-        return obs_distr_params, (mu, logvar, stds)
+        return obs_distr_params, (mu, stds, logvar)
 
     def loss(self, obs):
         # TODO: Does this need seeding?
         epsilon = torch.randn([obs.size(0), self.code_dim]).to(self.device) 
-        obs_distr_params, (mu, logvar, stds) = self.forward(obs, epsilon)
+        obs_distr_params, (mu, stds, logvar) = self.forward(obs, epsilon)
         kle = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
         log_prob = F.mse_loss(obs, obs_distr_params, reduction='none')
         loss = self.beta * kle + log_prob.mean()
         return loss, log_prob.sum(list(range(1, len(log_prob.shape)))).view(log_prob.shape[0], 1)
 
 
-class TSVAE(VAE):
-    
-    def make_networks(self, obs_shape, code_dim):
-        print(f"obs_shape: {obs_shape}") 
-        self.seq_len, num_features = obs_shape
+class ConvVAE(nn.Module):
+    def __init__(self, sequence_length, n_features, latent_dim=8, hidden_dim=64, beta=1.0):
+        """
+        Variational Autoencoder using CNNs for time series data.
         
+        Args:
+            sequence_length (int): Length of the input time series
+            n_features (int): Number of features per time step
+            latent_dim (int): Dimension of the latent space
+            hidden_dim (int): Number of hidden units in the encoder/decoder
+            beta (float): Weight for the KL divergence term in the loss function, 1.0 is standard VAE
+        """
+        super().__init__()
+        self.beta = beta
+        
+        # Encoder
         self.encoder = nn.Sequential(
-            nn.LSTM(input_size=num_features, hidden_size=150, num_layers=2, batch_first=True),
-            nn.Flatten(),
+            nn.Conv1d(n_features, hidden_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(hidden_dim, hidden_dim * 2, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(hidden_dim * 2, hidden_dim * 2, kernel_size=3, padding=1),
+            nn.ReLU(),
         )
-
-        self.enc_mu = nn.Linear(150, code_dim)
-        self.enc_logvar = nn.Linear(150, code_dim)
         
-        self.decoder_input = nn.Linear(code_dim, 150)
-        self.decoder_lstm = nn.LSTM(input_size=150, hidden_size=num_features, num_layers=2, batch_first=True)
+        # Flatten size for FC layers
+        self.flatten_size = hidden_dim * 2 * sequence_length
         
-    def encode(self, obs):
+        # Mean and variance for latent space
+        self.fc_mu = nn.Linear(self.flatten_size, latent_dim)
+        self.fc_var = nn.Linear(self.flatten_size, latent_dim)
         
-        lstm_out, _ = self.encoder[0](obs)
-        enc_features = lstm_out[:, -1, :]
-        enc_features = self.encoder[1](enc_features)
+        # Decoder
+        self.decoder_input = nn.Linear(latent_dim, self.flatten_size)
         
-        mu = self.enc_mu(enc_features)
-        logvar = self.enc_logvar(enc_features)
-        std = (0.5 * logvar).exp()
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose1d(hidden_dim * 2, hidden_dim * 2, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(hidden_dim * 2, hidden_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(hidden_dim, n_features, kernel_size=3, padding=1),
+        )
         
-        return mu, std, logvar
+        self.sequence_length = sequence_length
+        self.hidden_dim = hidden_dim
+        self.latent_dim = latent_dim
+        
+    def encode(self, x):
+        """Encode the input into latent space parameters."""
+        x = x.permute(0, 2, 1)  # [batch, features, sequence]
+        x = self.encoder(x)
+        x = x.reshape(x.shape[0], -1)
+        
+        mu = self.fc_mu(x)
+        log_var = self.fc_var(x)
+        return mu, log_var
     
-    def decoder(self, code):
-        # self.seq_len, num_features = obs_shape
-        decoder_hidden = self.decoder_input(code)
-        h_0 = decoder_hidden.unsqueeze(0).repeat(2, 1, 1)  # (num_layers, batch_size, 150)
-        c_0 = torch.zeros_like(h_0)
-        dec_input = torch.zeros((code.size(0), self.seq_len, 150), device=self.device)
-        dec_output, _ = self.decoder_lstm(dec_input, (h_0, c_0))
-        return dec_output
+    def decode(self, z):
+        """Decode from latent space to time series."""
+        x = self.decoder_input(z)
+        x = x.reshape(-1, self.hidden_dim * 2, self.sequence_length)
+        x = self.decoder(x)
+        x = x.permute(0, 2, 1)  # [batch, sequence, features]
+        return x
+    
+    def reparameterize(self, mu, log_var):
+        """Reparameterization trick for sampling from latent space."""
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+    
+    def forward(self, x):
+        """Forward pass through the VAE."""
+        mu, log_var = self.encode(x)
+        z = self.reparameterize(mu, log_var)
+        return self.decode(z), mu, log_var
+
+    def loss(self, x):
+        """
+        Loss function for the VAE combining reconstruction loss and KL divergence.
         
-        decoder_input = self.decoder_input(code).unsqueeze(1).repeat(1, self.seq_len, 1)
-        dec_output, _ = self.decoder_lstm(decoder_input)
-        return dec_output
+        Args:
+            x: Original time series
+        """
+        recon, mu, log_var = self.forward(x)
+        recon_loss = F.mse_loss(recon, x, reduction='sum')
+        kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        total_loss = recon_loss + self.beta * kld_loss
+        
+        return total_loss, recon_loss, kld_loss
 
