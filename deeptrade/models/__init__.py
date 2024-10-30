@@ -16,7 +16,7 @@ from .util import (
     Conv2dDecoder,
     Conv2dEncoder,
     VAE,
-    TSVAE,
+    ConvVAE,
     EnsembleLinearLayer,
     truncated_normal_init,
 )
