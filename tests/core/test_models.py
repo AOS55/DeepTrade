@@ -6,6 +6,7 @@ import omegaconf
 import pytest
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 import deeptrade.models
 import deeptrade.util.replay_buffer
@@ -485,7 +486,9 @@ def test_conv2d_decoder_shapes():
         out = decoder.forward(dummy)
         assert out.shape[0] == 8 and out.shape[1] == config[-1][1]
 
+
 _VAE_OBS_DIM = 20
+
      
 @pytest.fixture
 def vae_model():
@@ -529,63 +532,126 @@ def test_loss_calculation(vae_model):
     assert log_prob.shape == (batch_size, 1)
 
 
-_TS_VAE_OBS_DIM = (10, 5)
+@pytest.fixture
+def model_params():
+    return {
+        'sequence_length': 20,
+        'n_features': 3,
+        'latent_dim': 8,
+        'hidden_dim': 64,
+        'beta': 1.0
+    }
 
 
 @pytest.fixture
-def ts_vae_model():
-    obs_dim = _TS_VAE_OBS_DIM
-    code_dim = 2
-    vae_beta = 1.0
-    model = model_utils.TSVAE(obs_dim, code_dim, vae_beta)
-    return model
+def convvae_model(model_params):
+    return model_utils.ConvVAE(**model_params)
 
 
-def test_ts_encode_output_shape(ts_vae_model):
-    batch_size = 8
-    sample_input = torch.randn(batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
-    
-    # Run encoding
-    mu, std, logvar = ts_vae_model.encode(sample_input)
-    
-    # Check shapes of mu, std, and logvar
-    assert mu.shape == (batch_size, ts_vae_model.code_dim)
-    assert std.shape == (batch_size, ts_vae_model.code_dim)
-    assert logvar.shape == (batch_size, ts_vae_model.code_dim)
+@pytest.fixture
+def sample_batch(model_params):
+    batch_size = 16
+    return torch.randn(batch_size, model_params['sequence_length'], model_params['n_features'])
 
 
-def test_ts_decode_output_shape(ts_vae_model):
-    batch_size = 8
-    latent_code = torch.randn(batch_size, ts_vae_model.code_dim)
+def test_model_initialization(model_params):
+    model = model_utils.ConvVAE(**model_params)
     
-    # Run decoding
-    decoded_output = ts_vae_model.decoder(latent_code)
+    # Check model attributes
+    assert model.sequence_length == model_params['sequence_length']
+    assert model.hidden_dim == model_params['hidden_dim']
+    assert model.latent_dim == model_params['latent_dim']
+    assert model.beta == model_params['beta']
     
-    # Check shape of the decoded output
-    assert decoded_output.shape == (batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
+    # Check flatten size calculation
+    expected_flatten_size = model_params['hidden_dim'] * 2 * model_params['sequence_length']
+    assert model.flatten_size == expected_flatten_size
 
 
-def test_ts_forward_pass(ts_vae_model):
-    batch_size = 8
-    sample_input = torch.randn(batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
-    epsilon = torch.randn(batch_size, ts_vae_model.code_dim)
+def test_encode(convvae_model, sample_batch):
+    mu, log_var = convvae_model.encode(sample_batch)
     
-    # Run the forward pass
-    output, (mu, logvar, std) = ts_vae_model.forward(sample_input, epsilon)
+    # Check shapes
+    assert mu.shape == (sample_batch.shape[0], convvae_model.latent_dim)
+    assert log_var.shape == (sample_batch.shape[0], convvae_model.latent_dim)
     
-    # Check the shapes
-    assert output.shape == sample_input.shape
-    assert mu.shape == (batch_size, ts_vae_model.code_dim)
-    assert logvar.shape == (batch_size, ts_vae_model.code_dim)
-    assert std.shape == (batch_size, ts_vae_model.code_dim)
+    # Check values
+    assert not torch.isnan(mu).any()
+    assert not torch.isnan(log_var).any()
+    assert not torch.isinf(mu).any()
+    assert not torch.isinf(log_var).any()
 
-def test_ts_loss_calculation(ts_vae_model):
-    batch_size = 8
-    sample_input = torch.randn(batch_size, ts_vae_model.seq_len, ts_vae_model.encoder[0].input_size)
+
+def test_decode(convvae_model, model_params):
+    batch_size = 16
+    z = torch.randn(batch_size, model_params['latent_dim'])
+    decoded = convvae_model.decode(z)
     
-    # Calculate loss
-    loss, log_prob = ts_vae_model.loss(sample_input)
+    # Check output shape
+    expected_shape = (batch_size, model_params['sequence_length'], model_params['n_features'])
+    assert decoded.shape == expected_shape
     
-    # Check that loss is a scalar and log_prob has the correct shape
-    assert isinstance(loss.item(), float)
-    assert log_prob.shape == (batch_size, 1)
+    # Check values
+    assert not torch.isnan(decoded).any()
+    assert not torch.isinf(decoded).any()
+
+
+def test_forward(convvae_model, sample_batch):
+    reconstruction, mu, log_var = convvae_model(sample_batch)
+    
+    # Check shapes
+    assert reconstruction.shape == sample_batch.shape
+    assert mu.shape == (sample_batch.shape[0], convvae_model.latent_dim)
+    assert log_var.shape == (sample_batch.shape[0], convvae_model.latent_dim)
+    
+    # Check values
+    assert not torch.isnan(reconstruction).any()
+    assert not torch.isnan(mu).any()
+    assert not torch.isnan(log_var).any()
+
+
+def test_loss_function(convvae_model, sample_batch):
+    total_loss, recon_loss, kld_loss = convvae_model.loss(sample_batch)
+    
+    # Check that losses are scalars
+    assert total_loss.ndim == 0
+    assert recon_loss.ndim == 0
+    assert kld_loss.ndim == 0
+    
+    # Check values are reasonable
+    assert total_loss.item() > 0
+    assert recon_loss.item() > 0
+    assert kld_loss.item() > 0
+    
+    # Check loss computation
+    assert torch.allclose(total_loss, recon_loss + convvae_model.beta * kld_loss)
+    
+    # Verify KLD loss is non-negative
+    assert kld_loss.item() >= 0
+
+
+def test_full_pipeline(convvae_model, sample_batch):
+    # Test the full pipeline: encode -> reparameterize -> decode
+    mu, log_var = convvae_model.encode(sample_batch)
+    z = convvae_model.reparameterize(mu, log_var)
+    reconstruction = convvae_model.decode(z)
+    
+    # Final shape should match input
+    assert reconstruction.shape == sample_batch.shape
+    # Test if the model can reconstruct the input with reasonable accuracy
+    mse = F.mse_loss(reconstruction, sample_batch)
+    assert mse.item() < 10.0, "Reconstruction error is too high"
+
+
+def test_beta_effect(model_params, sample_batch):
+    # Test with different beta values
+    beta_1 = model_utils.ConvVAE(**{**model_params, 'beta': 1.0})
+    beta_01 = model_utils.ConvVAE(**{**model_params, 'beta': 0.1})
+    
+    # Compute losses for both models
+    total_1, recon_1, kld_1 = beta_1.loss(sample_batch)
+    total_01, recon_01, kld_01 = beta_01.loss(sample_batch)
+    
+    # Lower beta should result in lower KLD contribution to total loss
+    assert abs(total_1 - (recon_1 + kld_1)) < 1e-3
+    assert abs(total_01 - (recon_01 + 0.1 * kld_01)) < 1e-3
