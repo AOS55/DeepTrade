@@ -1,16 +1,61 @@
 import torch
-
+from typing import Tuple
 from . import termination_fns
 
 
-def single_instrument(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
-    last_price = next_obs[:, -4]
-    current_price = next_obs[:, -3]
-    delta_price = current_price - last_price
-    position = next_obs[:, -2]
-    position = position + act.squeeze()
-    reward = position * delta_price
-    return reward.view(-1, 1)
+def make_single_instrument_reward_fn(action_bounds: Tuple[float, float] = (-10.0, 10.0)):
+    """Creates a reward function for the trading environment model that handles position limits."""
+    positions = torch.tensor(0.0)
+    
+    def reward_fn(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
+        nonlocal positions
+        if positions.device != act.device:
+            positions = positions.to(act.device)
+            
+        # Handle batch dimensions for planning
+        if act.dim() > positions.dim() + 1:  # If we have extra batch dimensions
+            # For planning, we'll use the first observation's position as initial
+            positions_expanded = positions.expand(*act.shape[:-1])
+            position_changes = act[..., 0]
+            new_positions = positions_expanded + position_changes
+            new_positions = torch.clamp(new_positions, action_bounds[0], action_bounds[1])
+            
+            # Calculate rewards using the sequence of positions
+            latest_returns = next_obs[..., -1]
+            rewards = positions_expanded * latest_returns
+            
+            # Only update the actual position if this is a real environment step
+            if act.dim() == 2:
+                positions = new_positions[-1]
+        else:
+            # Normal environment step
+            position_changes = act[..., 0]
+            new_positions = positions + position_changes
+            new_positions = torch.clamp(new_positions, action_bounds[0], action_bounds[1])
+            
+            latest_returns = next_obs[..., -1]
+            rewards = positions * latest_returns
+            
+            positions = new_positions
+            
+        return rewards.unsqueeze(-1)
+    
+    def reset():
+        nonlocal positions
+        positions = torch.tensor(0.0)
+        
+    reward_fn.reset = reset
+    return reward_fn
+    
+        
+# def single_instrument(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
+#     last_price = next_obs[:, -4]
+#     current_price = next_obs[:, -3]
+#     delta_price = current_price - last_price
+#     position = next_obs[:, -2]
+#     position = position + act.squeeze()
+#     reward = position * delta_price
+#     return reward.view(-1, 1)
 
 
 def cartpole_pets(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
