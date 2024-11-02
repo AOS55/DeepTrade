@@ -186,7 +186,6 @@ class ModelEnv:
                     action_batch, model_state, sample=True
                 )
                 dones = dones.view(-1, 1).to(self.device)
-                # print(f"rewards: {rewards.shape}, terminated: {terminated.shape}")
                 rewards[terminated] = 0
                 terminated |= dones
                 total_rewards += rewards
