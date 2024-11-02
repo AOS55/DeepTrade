@@ -1,0 +1,45 @@
+# Environment configuration
+env:
+    starting_cash: 100000.0
+    window: 10
+
+# Training parameters
+seed: 42
+device: "cuda"
+position_limits: [-10.0, 10.0]
+trial_length: 1000
+
+# Training configuration
+training:
+    exploration_steps: 10000
+    batch_size: 256
+    val_ratio: 0.2
+    epochs: 100
+    early_stopping_patience: 20
+
+# Optimizer configuration
+optim:
+    lr: 1.0e-3
+    weight_decay: 5.0e-5
+
+# Overrides
+overrides:
+    num_steps: 100
+
+# Dynamics model configuration
+dynamics_model:
+    num_layers: 4
+    ensemble_size: 5
+    hid_size: 64
+    deterministic: false
+    propagation_method: "fixed_model"
+
+# Algorithm configuration
+algorithm:
+    target_is_delta: false
+    normalize: true
+    num_particles: 20
+
+# Logging configuration
+use_wandb: false
+verbose: true
