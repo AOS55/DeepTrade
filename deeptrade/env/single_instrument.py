@@ -118,7 +118,7 @@ class SingleInstrumentEnv(gym.Env):
         Execute one time step within the environment.
 
         Args:
-            action: Position change to execute
+            action: Desired absolute position
 
         Returns:
             observation: Returns array
@@ -128,10 +128,8 @@ class SingleInstrumentEnv(gym.Env):
             info: Additional information including account state
         """
         # Calculate position change and clip to bounds
-        position_change = action[0]
-        new_position = self.account.position + position_change
-        new_position = np.clip(new_position, self.action_space.low[0], self.action_space.high[0])
-        actual_change = new_position - self.account.position
+        new_position = action[0]
+        position_change = new_position - self.account.position
 
         # Advance time and calculate reward
         self.time += self.period
@@ -140,7 +138,7 @@ class SingleInstrumentEnv(gym.Env):
         reward = self.account.position * delta_price
 
         # Update account
-        self.account.update(actual_change, reward)
+        self.account.update(position_change, reward)
 
         # Calculate new observation
         self.returns = self._calculate_returns()
@@ -161,6 +159,7 @@ class SingleInstrumentEnv(gym.Env):
 
     def reset(
         self,
+        *,
         seed: Optional[int] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
@@ -173,8 +172,7 @@ class SingleInstrumentEnv(gym.Env):
             observation: Initial returns array
             info: Additional information including account state
         """
-        if seed is not None:
-            super().reset(seed=seed)
+        super().reset(seed=seed, options=options)
 
         if start_time is not None:
             self._start_time = start_time
