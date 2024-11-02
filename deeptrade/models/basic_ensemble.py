@@ -110,12 +110,14 @@ class BasicEnsemble(Ensemble):
         has_logvar = True
         for i, member in enumerate(self.members):
             model_idx = model_indices == i
-            mean, logvar = member(x[model_idx])
-            means[model_idx] = mean
-            if logvar is not None:
-                logvars[model_idx] = logvar
-            else:
-                has_logvar = False
+            if model_idx.any():
+                mean, logvar = member(x[model_idx])
+                means[model_idx] = mean.view(-1, self.out_size)
+                if logvar is not None:
+                    logvars[model_idx] = logvar.view(-1, self.out_size)
+                else:
+                    has_logvar = False
+
         if not has_logvar:
             logvars = None
         return means, logvars
