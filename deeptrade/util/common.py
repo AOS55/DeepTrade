@@ -47,7 +47,6 @@ def create_one_dim_tr_model(
                ...
               -model_arg_n
           -algorithm
-            -learned_rewards (bool): whether rewards should be learned or not
             -target_is_delta (bool): to be passed to the dynamics model wrapper
             -normalize (bool): to be passed to the dynamics model wrapper
           -overrides
@@ -57,7 +56,7 @@ def create_one_dim_tr_model(
 
     If ``cfg.dynamics_model.in_size`` is not provided, it will be automatically set to
     `obs_shape[0] + act_shape[0]`. If ``cfg.dynamics_model.out_size`` is not provided,
-    it will be automatically set to `obs_shape[0] + int(cfg.algorithm.learned_rewards)`.
+    it will be automatically set to `obs_shape[0]`.
 
     The model will be instantiated using :func:`hydra.utils.instantiate` function.
 
@@ -83,7 +82,7 @@ def create_one_dim_tr_model(
     if model_cfg.get("in_size", None) is None:
         model_cfg.in_size = obs_shape[0] + (act_shape[0] if act_shape else 1)
     if model_cfg.get("out_size", None) is None:
-        model_cfg.out_size = obs_shape[0] + int(cfg.algorithm.learned_rewards)
+        model_cfg.out_size = obs_shape[0]
 
     # Now instantiate the model
     model = hydra.utils.instantiate(cfg.dynamics_model, _recursive_=False)
@@ -100,7 +99,6 @@ def create_one_dim_tr_model(
         normalize_double_precision=cfg.algorithm.get(
             "normalize_double_precision", False
         ),
-        learned_rewards=cfg.algorithm.learned_rewards,
         obs_process_fn=obs_process_fn,
         no_delta_list=cfg.overrides.get("no_delta_list", None),
         num_elites=cfg.overrides.get("num_elites", None),
