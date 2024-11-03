@@ -85,20 +85,20 @@ def plot_prediction_timeline(y_true: torch.Tensor, y_pred: torch.Tensor, y_pred_
     """Plot continuous timeline with predictions and variance bands"""
     y_true_np = y_true.cpu().numpy()
     y_pred_np = y_pred.cpu().numpy()
-    
+
     y_true = y_true_np[:, 0]
     y_pred = y_pred_np[:, 0]
-    
+
     fig, ax = plt.subplots(figsize=(16, 8))
-    
+
     # Plot actual timeline
     ax.plot(y_true, label='Actual', color='#2ecc71',
             linewidth=2, alpha=0.8)
-    
+
     # Plot predictions
     ax.plot(y_pred, label='Predicted', color='#e74c3c',
             linewidth=2, alpha=0.8)
-    
+
     # Add variance bands if available
     if y_pred_var is not None:
         y_pred_std = np.sqrt(y_pred_var.cpu().numpy())
@@ -106,13 +106,13 @@ def plot_prediction_timeline(y_true: torch.Tensor, y_pred: torch.Tensor, y_pred_
         for i in range(len(y_pred_std)):
             std_values.append(y_pred_std[i, 0])
         std_values = np.array(std_values)
-        
+
         ax.fill_between(range(len(predicted_values)),
                        predicted_values - 2*std_values,  # 2 standard deviations
                        predicted_values + 2*std_values,
                        color='#e74c3c', alpha=0.2,
                        label='95% Confidence Interval')
-    
+
     ax.set_title('Prediction Timeline with Uncertainty', fontsize=14, pad=15)
     ax.set_xlabel('Time Step', fontsize=12)
     ax.set_ylabel('Value', fontsize=12)
@@ -120,7 +120,7 @@ def plot_prediction_timeline(y_true: torch.Tensor, y_pred: torch.Tensor, y_pred_
     ax.grid(True, linestyle='--', alpha=0.7)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    
+
     plt.tight_layout()
     fig.savefig("prediction_timeline.png", dpi=300, bbox_inches='tight')
     plt.close()
@@ -159,7 +159,7 @@ def train_ensemble(ensemble, price_data, input_size, output_size, ensemble_size,
 
         ensemble_indices = [torch.randperm(len(X_train)) for _ in range(ensemble_size)]
 
-        
+
         for idx in range(0, len(X_train), batch_size):
             batch_end = min(idx + batch_size, len(X_train))
 
@@ -167,7 +167,7 @@ def train_ensemble(ensemble, price_data, input_size, output_size, ensemble_size,
             bootstrap_X = []
             bootstrap_y = []
             batch_size_actual = len(batch_X)
-            
+
             for indices in ensemble_indices:
                 member_indices = indices[idx:batch_end]
                 bootstrap_X.append(batch_X[member_indices])

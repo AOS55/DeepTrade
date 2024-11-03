@@ -1,0 +1,3 @@
+_target_: "deeptrade.models.time_series_processes.Sine"
+amp: ${as_numpy_array:[1.0]}
+freq: ${as_numpy_array:[1.0]}

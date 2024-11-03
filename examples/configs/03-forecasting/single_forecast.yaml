@@ -1,0 +1,31 @@
+defaults:
+    - _self_
+    - price_model: gbm
+
+# Training parameters
+seed: 42
+device: cuda
+epochs: 100
+batch_size: 256
+lr: 1e-3
+val_split: 0.1
+
+# Environment configuration
+n_steps: 10000
+dt: 0.004 # ~ 1/252 daily
+
+# Model configuration
+member_cfg:
+    _target_: deeptrade.models.LSTMForecastModel
+    in_size: 20
+    hid_size: 64
+    out_size: 1
+    num_layers: 2
+    device: ${device}
+ensemble_size: 15
+propagation_method: expectation
+
+# Logging configuration
+use_wandb: false
+verbose: false
+experiment_name: single_forecast

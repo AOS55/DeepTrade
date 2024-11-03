@@ -1,0 +1,4 @@
+_target_: "deeptrade.models.time_series_processes.GBM"
+S0: ${as_numpy_array:[100.0]}
+mu: ${as_numpy_array:[0.08]}
+cov_matrix: ${as_numpy_array:[[0.2]]}
