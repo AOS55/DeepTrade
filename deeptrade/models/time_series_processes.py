@@ -88,7 +88,7 @@ class MultiVariateTimeSeriesGenerator(abc.ABC):
 
 class GBM(MultiVariateTimeSeriesGenerator):
     """
-    Gaussian Brownian Motion (GBM) model for generating multivariate time series data.
+    Geometric Brownian Motion (GBM) model for generating multivariate time series data.
     This follows the standard GBM process for each instrument. Modelled as follows:
 
     dS_t = mu * S_t * dt + sigma * S_t * dW_t

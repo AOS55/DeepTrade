@@ -1,44 +1,59 @@
 import torch
 from torch import nn
-from typing import Optional, Tuple, Dict, Any
+from typing import Union, Optional, Tuple, Dict, Any
 
-class PricePredictionModel(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, output_size: int, num_layers: int = 2):
+class LSTMForecastModel(nn.Module):
+    def __init__(self,
+        in_size: int,
+        out_size: int,
+        device: Union[str, torch.device],
+        num_layers: int = 2,
+        hid_size: int = 200,
+    ):
         super().__init__()
 
+        self.in_size = in_size
+        self.out_size = out_size
+        
         # Encoder LSTM
         self.encoder = nn.LSTM(
             input_size=1,  # Single feature (price)
-            hidden_size=hidden_size,
+            hidden_size=hid_size,
             num_layers=num_layers,
+            dropout=0.1,
             batch_first=True
-        )
+        ).to(device)
 
         # Decoder LSTM
         self.decoder = nn.LSTM(
             input_size=1,  # Single feature (price)
-            hidden_size=hidden_size,
+            hidden_size=hid_size,
             num_layers=num_layers,
             batch_first=True
-        )
+        ).to(device)
 
-        self.linear = nn.Linear(hidden_size, 1)
-        self.criterion = nn.MSELoss()
+        self.linear = nn.Linear(hid_size, 1).to(device)
+        self.criterion = nn.MSELoss().to(device)
 
+        for name, param in self.named_parameters():
+            if 'weight' in name:
+                nn.init.xavier_normal_(param)
+            elif 'bias' in name:
+                nn.init.zeros_(param)
+    
         # Required model properties for ensemble
-        self.in_size = input_size
-        self.out_size = output_size
         self.deterministic = True # Indicate this is a deterministic model
+        self.device = device
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Forward pass returning mean predictions and optional logvars"""
-
+        
         # Encoder
         _, (hidden, cell) = self.encoder(x.unsqueeze(-1))
         decoder_input = x[:, -1:, None]
         predictions = []
 
-        for _ in range(self.out_size):
+        for step in range(self.out_size):
 
             output, (hidden, cell) = self.decoder(decoder_input, (hidden, cell))
             pred = self.linear(output)
@@ -55,6 +70,11 @@ class PricePredictionModel(nn.Module):
         with torch.set_grad_enabled(training):
             predictions, _ = self.forward(model_in)
             loss = self.criterion(predictions, target)
+
+            # Add regularization if required
+            if training:
+                l2_reg = torch.norm(self.linear.weight)
+                loss += 1e-5 * l2_reg
 
         meta = {
             f"{'train' if training else 'eval'}_mse": loss.item()
