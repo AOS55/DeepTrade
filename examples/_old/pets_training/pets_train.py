@@ -4,7 +4,7 @@ import deeptrade.env
 import torch
 from deeptrade.models import GaussianMLP, OneDTransitionRewardModel, ModelTrainer, ModelEnv
 from deeptrade.util.replay_buffer import ReplayBuffer
-from deeptrade.planning import create_trajectory_optim_agent_for_model
+from deeptrade.optimization import create_trajectory_optim_agent_for_model
 from omegaconf import DictConfig
 
 
@@ -167,7 +167,7 @@ def create_pets_agent(model, env):
     
     # Configuration for CEM optimizer
     optimizer_cfg = DictConfig({
-        "_target_": "deeptrade.planning.CEMOptimizer",
+        "_target_": "deeptrade.optimzation.CEMOptimizer",
         "num_iterations": 5,
         "elite_ratio": 0.1,
         "population_size": 400,
@@ -188,7 +188,7 @@ def create_pets_agent(model, env):
     agent = create_trajectory_optim_agent_for_model(
         model_env=model_env,
         agent_cfg=DictConfig({
-            "_target_": "deeptrade.planning.TrajectoryOptimizerAgent",
+            "_target_": "deeptrade.optimization.TrajectoryOptimizerAgent",
             "planning_horizon": 30,
             "optimizer_cfg": optimizer_cfg,
             "action_lb": env.action_space.low,

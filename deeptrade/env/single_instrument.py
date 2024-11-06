@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Union, Dict, Any, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -94,7 +94,7 @@ class SingleInstrumentEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(window-1,),
+            shape=(window,),
             dtype=np.float64
         )
 
@@ -105,15 +105,7 @@ class SingleInstrumentEnv(gym.Env):
             dtype=np.float64
         )
 
-        # Initial observation
-        self.returns = self._calculate_returns()
-
-    def _calculate_returns(self) -> np.ndarray:
-        """Calculate returns from current price window."""
-        # return calculate_simple_returns(self.prices)
-        return self.prices[1:10]
-
-    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, Dict]:
+    def step(self, action: Union[np.ndarray, float]) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         """
         Execute one time step within the environment.
 
@@ -128,7 +120,9 @@ class SingleInstrumentEnv(gym.Env):
             info: Additional information including account state
         """
         # Calculate position change and clip to bounds
-        new_position = action[0]
+        if isinstance(action, np.ndarray):
+            action = action.item() if action.size == 1 else action[0]
+        new_position = action
         position_change = new_position - self.account.position
 
         # Advance time and calculate reward
@@ -139,9 +133,6 @@ class SingleInstrumentEnv(gym.Env):
 
         # Update account
         self.account.update(position_change, reward)
-
-        # Calculate new observation
-        self.returns = self._calculate_returns()
 
         # Check termination conditions
         terminated = self.account.margin < 0  # Bankruptcy
@@ -155,34 +146,42 @@ class SingleInstrumentEnv(gym.Env):
             "delta_price": delta_price,
         })
 
-        return self.returns, reward, terminated, truncated, info
+        return self.prices, reward, terminated, truncated, info
 
     def reset(
         self,
         *,
         seed: Optional[int] = None,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        options: dict = {}
+        options: Optional[Dict[str, Any]] = None
     ) -> Tuple[np.ndarray, Dict]:
         """
         Reset the environment to initial state.
+
+        Args:
+            seed: Random seed for environment reset
+            options: Additional options for resetting the environment
 
         Returns:
             observation: Initial returns array
             info: Additional information including account state
         """
-        super().reset(seed=seed, options=options)
 
-        if start_time is not None:
-            self._start_time = start_time
-        if end_time is not None:
-            self._end_time = end_time
+        options = options or {}
+
+        if 'start_time' in options:
+            self._start_time = options['start_time']
+        if 'end_time' in options:
+            self._end_time = options['end_time']
+        if 'starting_cash' in options:
+            self.starting_cash = options['starting_cash']
+        if 'prices_data' in options:
+            self.prices_data = options['prices_data']
+
+        super().reset(seed=seed, options=options)
 
         self.account.reset(self.starting_cash)
         self.time = self._start_time
         self.prices = self._observe_prices_data(self.time)
-        self.returns = self._calculate_returns()
 
         info = self.account.get_info()
         info.update({
@@ -190,7 +189,7 @@ class SingleInstrumentEnv(gym.Env):
             "current_price": self.prices[-1]
         })
 
-        return self.returns, info
+        return self.prices, info
 
     def _create_prices_data(self, price_gen_info: dict) -> np.ndarray:
         """Create synthetic price data using specified generator."""
@@ -209,7 +208,14 @@ class SingleInstrumentEnv(gym.Env):
         return generator.generate(self.dt, price_gen_info["n_steps"])[0]
 
     def _observe_prices_data(self, time: int) -> np.ndarray:
-        """Get windowed price data at given time."""
+        """Get windowed price data at given time.
+
+        Args:
+            time: Current time step
+
+        Returns:
+            Array of shape [n_instruments, window] containing price history
+        """
         return np.array(self.prices_data[time-self._window:time])
 
     def render(self, mode: str = 'human'):

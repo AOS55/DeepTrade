@@ -1,0 +1,4 @@
+_target_: "deeptrade.env.agents.ewmac.EWMACAgent"
+fast_period: 40
+slow_period: 80
+pos_size: 10.0

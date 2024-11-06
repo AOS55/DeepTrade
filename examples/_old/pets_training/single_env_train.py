@@ -9,8 +9,8 @@ from IPython import display
 import deeptrade.env
 from deeptrade.env import reward_fns, termination_fns
 from deeptrade.models import ModelEnv, GaussianMLP
-from deeptrade.planning import RandomAgent, TrajectoryOptimizerAgent
-import deeptrade.planning as planning
+from deeptrade.optimization import RandomAgent, TrajectoryOptimizerAgent
+import deeptrade.optimization as planning
 import deeptrade.models as models
 import deeptrade.util.common as common_util
 import deeptrade.models.util as model_util
@@ -52,12 +52,12 @@ def create_trading_configs(device: str, ensemble_size: int = 5,
     }
     
     agent_cfg_dict = {
-        "_target_": "deeptrade.planning.TrajectoryOptimizerAgent",
+        "_target_": "deeptrade.optimization.TrajectoryOptimizerAgent",
         "planning_horizon": 15,
         "replan_freq": 1,
         "verbose": False,
         "optimizer_cfg": {
-            "_target_": "deeptrade.planning.CEMOptimizer",
+            "_target_": "deeptrade.optimization.CEMOptimizer",
             "num_iterations": 5,
             "elite_ratio": 0.1,
             "population_size": 500,

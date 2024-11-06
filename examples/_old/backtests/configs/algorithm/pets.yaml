@@ -1,7 +1,7 @@
 name: "pets"
 
 agent:
-  _target_: deeptrade.planning.TrajectoryOptimizerAgent
+  _target_: deeptrade.optimization.TrajectoryOptimizerAgent
   action_lb: ???
   action_ub: ???
   planning_horizon: ${overrides.planning_horizon}

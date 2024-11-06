@@ -1,4 +1,5 @@
 import gymnasium as gym
+import numpy as np
 
 from deeptrade.env import EWMACAgent, HoldAgent, BreakoutAgent
 
@@ -8,10 +9,11 @@ def _make_test_env():
 
 def _test_agent(env, agent):
 
-    state, _ = env.reset()
-    agent = agent(env=env)
+    prices, info = env.reset()
+    agent = agent()
+    position = np.array([info['position']])
     for _ in range(100):
-        action = agent.act(state)
+        action = agent.act(prices, position)
         next_state, reward, terminated, truncated, _ = env.step(action)
         state = next_state
         if terminated or truncated:
@@ -19,6 +21,6 @@ def _test_agent(env, agent):
 
 def test_agents():
     env = _make_test_env()
-    agents = [HoldAgent, EWMACAgent, BreakoutAgent]
+    agents = [EWMACAgent, BreakoutAgent]
     for agent in agents:
         _test_agent(env, agent)

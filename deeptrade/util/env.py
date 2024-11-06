@@ -11,7 +11,7 @@ import numpy as np
 import omegaconf
 import torch
 
-import deeptrade.planning
+import deeptrade.optimization
 import deeptrade.types
 
 
@@ -200,7 +200,7 @@ class EnvHandler(ABC):
         env: gym.wrappers.TimeLimit,
         initial_obs: np.ndarray,
         lookahead: int,
-        agent: Optional[deeptrade.planning.Agent] = None,
+        agent: Optional[deeptrade.optimization.Agent] = None,
         plan: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Runs the environment for some number of steps then returns it to its original state.
@@ -214,7 +214,7 @@ class EnvHandler(ABC):
                 needed when ``agent is not None``, to get the first action).
             lookahead (int): the number of steps to run. If ``plan is not None``,
                 it is overridden by `len(plan)`.
-            agent (:class:`deeptrade.planning.Agent`, optional): if given, an agent to obtain actions.
+            agent (:class:`deeptrade.optimization.Agent`, optional): if given, an agent to obtain actions.
             plan (sequence of np.ndarray, optional): if given, a sequence of actions to execute.
                 Takes precedence over ``agent`` when both are given.
 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from IPython import display
 
 import deeptrade.models as models
-import deeptrade.planning as planning
+import deeptrade.optimization as planning
 import deeptrade.util.common as common_util
 from deeptrade.models.util import ConvVAE
 from deeptrade.env import reward_fns, termination_fns
@@ -381,14 +381,14 @@ def create_config_dicts(device: str, latent_dim: int, ensemble_size: int = 5,
     }
     
     agent_cfg_dict = {
-        "_target_": "deeptrade.planning.TrajectoryOptimizerAgent",
+        "_target_": "deeptrade.optimization.TrajectoryOptimizerAgent",
         "planning_horizon": 15,
         "replan_freq": 1,
         "verbose": False,
         "action_lb": "???",
         "action_ub": "???",
         "optimizer_cfg": {
-            "_target_": "deeptrade.planning.CEMOptimizer",
+            "_target_": "deeptrade.optimization.CEMOptimizer",
             "num_iterations": 5,
             "elite_ratio": 0.1,
             "population_size": 500,

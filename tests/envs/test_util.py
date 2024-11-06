@@ -23,7 +23,7 @@ def _freeze_instrument_gym_env(env_name):
             actions.append(action)
             if terminated or truncated:
                 break
-    
+
     for a in actions:
         next_obs, reward, _, _, _ = env.step(a)
         ref_obs = seen_obses.pop(0)
@@ -69,4 +69,4 @@ def test_get_and_set_state():
 
 
 if __name__=="__main__":
-    test_get_and_set_state()
+    test_freeze()

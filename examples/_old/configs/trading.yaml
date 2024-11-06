@@ -54,12 +54,12 @@ algorithm:
 
 # Agent configuration
 agent:
-    _target_: "deeptrade.planning.TrajectoryOptimizerAgent"
+    _target_: "deeptrade.optimization.TrajectoryOptimizerAgent"
     planning_horizon: 15
     replan_freq: 5
     verbose: false
     optimizer_cfg:
-        _target_: "deeptrade.planning.CEMOptimizer"
+        _target_: "deeptrade.optimization.CEMOptimizer"
         num_iterations: 5
         elite_ratio: 0.1
         population_size: 500

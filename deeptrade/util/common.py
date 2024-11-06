@@ -12,7 +12,7 @@ import numpy as np
 import omegaconf
 
 import deeptrade.models
-import deeptrade.planning
+import deeptrade.optimization
 import deeptrade.types
 
 from .replay_buffer import (
@@ -416,7 +416,7 @@ def rollout_model_env(
     model_env: deeptrade.models.ModelEnv,
     initial_obs: np.ndarray,
     plan: Optional[np.ndarray] = None,
-    agent: Optional[deeptrade.planning.Agent] = None,
+    agent: Optional[deeptrade.optimization.Agent] = None,
     num_samples: int = 1,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rolls out an environment model.
@@ -427,7 +427,7 @@ def rollout_model_env(
          model_env (:class:`deeptrade.models.ModelEnv`): the dynamics model environment to simulate.
          initial_obs (np.ndarray): initial observation to start the episodes.
          plan (np.ndarray, optional): sequence of actions to execute.
-         agent (:class:`deeptrade.planning.Agent`): an agent to generate a plan before
+         agent (:class:`deeptrade.optimization.Agent`): an agent to generate a plan before
             execution starts (as in `agent.plan(initial_obs)`). If given, takes precedence
             over ``plan``.
         num_samples (int): how many samples to take from the model (i.e., independent rollouts).
@@ -456,7 +456,7 @@ def rollout_model_env(
 def rollout_agent_trajectories(
     env: gym.Env,
     steps_or_trials_to_collect: int,
-    agent: deeptrade.planning.Agent,
+    agent: deeptrade.optimization.Agent,
     agent_kwargs: Dict,
     trial_length: Optional[int] = None,
     callback: Optional[Callable] = None,
@@ -474,7 +474,7 @@ def rollout_agent_trajectories(
         env (gym.Env): the environment to step.
         steps_or_trials_to_collect (int): how many steps of the environment to collect. If
             ``collect_trajectories=True``, it indicates the number of trials instead.
-        agent (:class:`deeptrade.planning.Agent`): the agent used to generate an action.
+        agent (:class:`deeptrade.optimization.Agent`): the agent used to generate an action.
         agent_kwargs (dict): any keyword arguments to pass to `agent.act()` method.
         trial_length (int, optional): a maximum length for trials (env will be reset regularly
             after this many number of steps). Defaults to ``None``, in which case trials
@@ -563,7 +563,7 @@ def rollout_agent_trajectories(
 def step_env_and_add_to_buffer(
     env: gym.Env,
     obs: np.ndarray,
-    agent: deeptrade.planning.Agent,
+    agent: deeptrade.optimization.Agent,
     agent_kwargs: Dict,
     replay_buffer: ReplayBuffer,
     callback: Optional[Callable] = None,
@@ -575,7 +575,7 @@ def step_env_and_add_to_buffer(
         env (gym.Env): the environment to step.
         obs (np.ndarray): the latest observation returned by the environment (used to obtain
             an action from the agent).
-        agent (:class:`deeptrade.planning.Agent`): the agent used to generate an action.
+        agent (:class:`deeptrade.optimization.Agent`): the agent used to generate an action.
         agent_kwargs (dict): any keyword arguments to pass to `agent.act()` method.
         replay_buffer (:class:`deeptrade.util.ReplayBuffer`): the replay buffer
             containing stored data.

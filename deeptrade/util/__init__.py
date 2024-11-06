@@ -53,11 +53,11 @@ def create_handler_from_str(env_name: str):
         (EnvHandler): A handler for the associated gym environment
     """
     print(f"env_name: {env_name}")
-    if "SingleInstrument" in env_name:
+    if "Instrument" in env_name:
       from deeptrade.util.instrument import InstrumentEnvHandler
       return InstrumentEnvHandler()
-    if "MultiInstrument" in env_name:
-        from deeptrade.util.instrument import MultiInstrumentEnvHandler
-        return MultiInstrumentEnvHandler()
+    # if "MultiInstrument" in env_name:
+    #     from deeptrade.util.instrument import MultiInstrumentEnvHandler
+    #     return MultiInstrumentEnvHandler()
     else:
         raise NotImplementedError

@@ -1,4 +1,4 @@
-_target_: deeptrade.planning.CEMOptimizer
+_target_: deeptrade.optimization.CEMOptimizer
 num_iterations: ${overrides.cem_num_iters}
 elite_ratio: ${overrides.cem_elite_ratio}
 population_size: ${overrides.cem_population_size}

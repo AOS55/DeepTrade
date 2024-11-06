@@ -1,0 +1,29 @@
+colors:
+    train: "#4285F4"
+    validation: "#EA4335"
+    scatter: "#3498db"
+    actual: "#2ecc71"
+    forecast: "#e74c3c"
+    confidence: "#e74c3c"
+    split: "#7f8c8d"
+    error: "#3498db"
+
+fonts:
+    title:
+        size: 14
+        weight: bold
+        pad: 15
+    label:
+        size: 12
+    training:
+        labelsize: 10
+    prediction:
+        labelsize: 10
+    annotation:
+        size: 12
+        weight: normal
+
+figure_sizes:
+    training: [12, 14]
+    prediction: [16, 7]
+    forecast: [16, 8]

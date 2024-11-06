@@ -13,8 +13,8 @@ import wandb
 import deeptrade.env
 from deeptrade.env import reward_fns, termination_fns
 from deeptrade.models import ModelEnv, GaussianMLP, BasicEnsemble
-from deeptrade.planning import RandomAgent, TrajectoryOptimizerAgent
-import deeptrade.planning as planning
+from deeptrade.optimization import RandomAgent, TrajectoryOptimizerAgent
+import deeptrade.optimization as planning
 import deeptrade.models as models
 import deeptrade.util.common as common_util
 from deeptrade.util import Logger
