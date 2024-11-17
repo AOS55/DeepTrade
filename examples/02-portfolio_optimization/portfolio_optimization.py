@@ -42,7 +42,7 @@ class OptPortfolioWorkspace:
 
         # Generate price data
         generator = hydra.utils.instantiate(cfg.price_model)
-        self.price_data = generator.generate(dt = cfg.dt, n_steps=cfg.n_steps)
+        self.price_data = generator.generate(dt=cfg.dt, n_steps=cfg.n_steps)
 
         # Create Environment
         env_dict = {
@@ -92,7 +92,7 @@ class OptPortfolioWorkspace:
                     returns.append(rewards)
 
                 one_hot_returns.append(np.array(returns))
-            one_hot_returns = np.array(one_hot_returns)
+            self.one_hot_returns = np.array(one_hot_returns)
             # Create Portfolio Optimizer
             optimizer = PortfolioOptimizer(
                 risk_free_rate=self.cfg.risk_free_rate,
@@ -100,12 +100,47 @@ class OptPortfolioWorkspace:
             )
 
             # Store weights
-            self.portfolio_weights = optimizer.optimize_portfolio(one_hot_returns)
-            pass
+            self.portfolio_weights = optimizer.optimize_portfolio(self.one_hot_returns)
 
         return
 
     def eval(self):
+        """Evaluate the agent and portfolio weights"""
+
+        prices = []
+        positions = []
+        account_values = []
+
+        terminated, truncated = False, False
+        backtest_config = {"start_time": self.cfg.start_backtest, "end_time": self.cfg.n_steps}
+        obs, info = self.env.reset(options=backtest_config)
+        positions = []
+        position = np.array([0.0])
+
+        while not terminated and not truncated:
+            actions = []
+            for idi in range(self.n_instruments):
+                action = self.portfolio_weights.weights[idi] * self.agents[idi].act(obs[idi], position)
+                actions.append(action)
+            obs, reward, terminated, truncated, info = self.env.step(action)
+            position = action
+
+            prices.append(info['current_prices'])
+            positions.append(info['position'])
+            account_values.append(info['margin'])
+
+        prices = np.array(prices)
+        positions = np.array(positions)
+        account_values = np.array(account_values)
+
+        strategy_returns = np.diff(account_values) / account_values[:-1]
+        # benchmark_returns = self.agent.pos_size * np.diff(prices) / account_values[::-1]
+
+        self.plotter.plot_portfolio_optimization(
+            weights=self.portfolio_weights.weights,
+            returns = self.one_hot_returns,
+            asset_names = [f"Asset {idi}" for idi in range(self.n_instruments)]
+        )
 
         return
 

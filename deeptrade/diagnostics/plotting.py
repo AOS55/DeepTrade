@@ -496,6 +496,96 @@ class Plotter:
         fig.savefig(self.save_dir / save_name, dpi=300, bbox_inches='tight')
         plt.close()
 
+    def plot_portfolio_optimization(self,
+                                    weights: np.ndarray,
+                                    returns: np.ndarray,
+                                    asset_names: Optional[List[str]] = None,
+                                    save_name: str = "portfolio_optimization.png"):
+        """
+        Create comprehensive portfolio optimization visualization
+
+        Args:
+            weights: Array of portfolio weights for each asset
+            returns: Array of asset returns [n_assets, n_timesteps]
+            asset_names: Optional list of asset names
+            save_name: Name of output file
+        """
+        if asset_names is None:
+            asset_names = [f"Asset {ida}" for ida in range(len(weights))]
+
+        fig = plt.figure(figsize=self.style.figure_sizes.get('portfolio', (15, 10)))
+        gs = plt.GridSpec(2, 2, figure=fig)
+
+        # 1. Portfolio Allocation (Pie Chart)
+        ax1 = fig.add_subplot(gs[0, 0])
+        wedges, texts, autotexts = ax1.pie(weights,
+                                        labels=asset_names,
+                                        autopct='%1.1f%%',
+                                        colors=plt.cm.Set3(np.linspace(0, 1, len(weights))))
+        ax1.set_title('Portfolio Weight Allocation')
+
+        # 2. Risk-Return Scatter
+        ax2 = fig.add_subplot(gs[0, 1])
+        returns_mean = np.mean(returns, axis=1) * 252  # Annualized
+        returns_vol = np.std(returns, axis=1) * np.sqrt(252)
+
+        # Plot individual assets
+        ax2.scatter(returns_vol, returns_mean,
+                    c=plt.cm.Set3(np.linspace(0, 1, len(weights))),
+                    s=100,
+                    alpha=0.6)
+
+        # Plot portfolio point
+        port_return = np.sum(weights * returns_mean)
+        port_vol = np.sqrt(np.sum(weights**2 * returns_vol**2))  # Simplified, ignores correlations
+        ax2.scatter(port_vol, port_return,
+                    c='red',
+                    s=200,
+                    marker='*',
+                    label='Portfolio')
+
+        # Add asset labels
+        for i, (vol, ret, name) in enumerate(zip(returns_vol, returns_mean, asset_names)):
+            ax2.annotate(name, (vol, ret),
+                            xytext=(5, 5),
+                            textcoords='offset points')
+
+        ax2.set_xlabel('Annualized Volatility')
+        ax2.set_ylabel('Annualized Return')
+        ax2.set_title('Risk-Return Profile')
+        ax2.legend()
+
+        # 3. Correlation Heatmap
+        ax3 = fig.add_subplot(gs[1, :])
+        corr_matrix = np.corrcoef(returns)
+        im = ax3.imshow(corr_matrix,
+                        cmap='RdYlBu',
+                        vmin=-1,
+                        vmax=1)
+
+        # Add correlation values
+        for i in range(len(weights)):
+            for j in range(len(weights)):
+                text = ax3.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                                ha="center",
+                                va="center",
+                                color="black")
+
+        ax3.set_xticks(range(len(weights)))
+        ax3.set_yticks(range(len(weights)))
+        ax3.set_xticklabels(asset_names)
+        ax3.set_yticklabels(asset_names)
+        plt.colorbar(im, ax=ax3)
+        ax3.set_title('Asset Correlation Matrix')
+
+        # Apply styling
+        for ax in [ax1, ax2, ax3]:
+            self.style.apply_style(ax, 'portfolio')
+
+        plt.tight_layout()
+        fig.savefig(self.save_dir / save_name, dpi=300, bbox_inches='tight')
+        plt.close()
+
     def _calculate_sharpe(self, returns: np.ndarray) -> float:
         """Calculate annualized Sharpe ratio"""
         return np.sqrt(252) * np.mean(returns) / np.std(returns)
