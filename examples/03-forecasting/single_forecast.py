@@ -7,6 +7,7 @@ import torch.nn as nn
 from datetime import datetime
 from pathlib import Path
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from deeptrade.models import BasicEnsemble, GBM, OU, JDM
@@ -21,6 +22,7 @@ class ForecastWorkspace:
 
         # Setup directory configs
         self.work_dir = Path.cwd()
+        self.base_dir = self.work_dir.parents[2]
         self.cfg = cfg
 
         # Device setup
@@ -49,8 +51,17 @@ class ForecastWorkspace:
         OmegaConf.register_new_resolver("as_numpy_array", as_numpy_array)
 
         # Generate price data
-        generator = hydra.utils.instantiate(cfg.price_model)
-        self.price_data = generator.generate(dt=cfg.dt, n_steps=cfg.n_steps)[0, :]
+        if cfg.use_synthetic_data:
+            generator = hydra.utils.instantiate(cfg.price_model)
+            self.price_data = generator.generate(dt=cfg.dt, n_steps=cfg.n_steps)[0, :]
+        else:
+            # Use pathlib to construct the path
+            data_file = self.base_dir / "data" / f"{cfg.time_series}.csv"
+            if not data_file.exists():
+                raise FileNotFoundError(f"Data file not found: {data_file}")
+            self.price_data = pd.read_csv(data_file)
+            self.price_data = np.array(self.price_data['price'])
+            print(self.price_data)
         self.log_price_data = calculate_log_returns(self.price_data)
 
         # Setup optimizer

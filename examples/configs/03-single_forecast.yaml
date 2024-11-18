@@ -6,7 +6,7 @@ defaults:
 # Training parameters
 seed: 42
 device: cuda
-epochs: 200
+epochs: 1000
 batch_size: 256
 lr: 1e-3
 val_split: 0.1
@@ -15,13 +15,15 @@ shuffle_dataloader: false
 # Environment configuration
 n_steps: 2000 # ~ 8 years
 dt: 0.004 # ~ 1/252 daily
+use_synthetic_data: false # Use synthetic data 
+time_series: USDJPY
 
 # Model configuration
 member_cfg:
     _target_: deeptrade.models.MLPForecastModel
-    in_size: 30
-    hid_size: 128
-    out_size: 10
+    in_size: 70
+    hid_size: 256
+    out_size: 20
     num_layers: 3
     device: ${device}
 ensemble_size: 15
