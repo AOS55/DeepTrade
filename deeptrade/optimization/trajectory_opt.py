@@ -14,7 +14,7 @@ import torch.distributions
 
 import deeptrade.models
 import deeptrade.types
-import deeptrade.util.math
+import deeptrade.util.nn_math
 
 from .core import Agent, complete_agent_cfg
 

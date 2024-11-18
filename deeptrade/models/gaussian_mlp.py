@@ -13,7 +13,7 @@ from torch import nn as nn
 from torch.nn import functional as F
 
 import deeptrade
-import deeptrade.util.math
+import deeptrade.util.nn_math
 
 from .model import Ensemble
 from .util import EnsembleLinearLayer, truncated_normal_init

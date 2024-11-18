@@ -11,7 +11,7 @@ import torch
 
 import deeptrade.models.util as model_util
 import deeptrade.types
-import deeptrade.util.math
+import deeptrade.util.nn_math
 
 from .model import Ensemble, Model
 

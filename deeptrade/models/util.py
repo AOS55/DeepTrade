@@ -11,7 +11,7 @@ from torch import nn as nn
 import torch.nn.functional as F
 
 import deeptrade.types
-import deeptrade.util.math
+import deeptrade.util.nn_math
 
 
 def truncated_normal_init(m: nn.Module):
