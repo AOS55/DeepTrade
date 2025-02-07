@@ -12,7 +12,7 @@ import numpy as np
 import omegaconf
 
 import deeptrade.models
-import deeptrade.planning
+import deeptrade.optimization
 import deeptrade.types
 
 from .replay_buffer import (
@@ -47,7 +47,6 @@ def create_one_dim_tr_model(
                ...
               -model_arg_n
           -algorithm
-            -learned_rewards (bool): whether rewards should be learned or not
             -target_is_delta (bool): to be passed to the dynamics model wrapper
             -normalize (bool): to be passed to the dynamics model wrapper
           -overrides
@@ -57,7 +56,7 @@ def create_one_dim_tr_model(
 
     If ``cfg.dynamics_model.in_size`` is not provided, it will be automatically set to
     `obs_shape[0] + act_shape[0]`. If ``cfg.dynamics_model.out_size`` is not provided,
-    it will be automatically set to `obs_shape[0] + int(cfg.algorithm.learned_rewards)`.
+    it will be automatically set to `obs_shape[0]`.
 
     The model will be instantiated using :func:`hydra.utils.instantiate` function.
 
@@ -83,7 +82,7 @@ def create_one_dim_tr_model(
     if model_cfg.get("in_size", None) is None:
         model_cfg.in_size = obs_shape[0] + (act_shape[0] if act_shape else 1)
     if model_cfg.get("out_size", None) is None:
-        model_cfg.out_size = obs_shape[0] + int(cfg.algorithm.learned_rewards)
+        model_cfg.out_size = obs_shape[0]
 
     # Now instantiate the model
     model = hydra.utils.instantiate(cfg.dynamics_model, _recursive_=False)
@@ -100,7 +99,6 @@ def create_one_dim_tr_model(
         normalize_double_precision=cfg.algorithm.get(
             "normalize_double_precision", False
         ),
-        learned_rewards=cfg.algorithm.learned_rewards,
         obs_process_fn=obs_process_fn,
         no_delta_list=cfg.overrides.get("no_delta_list", None),
         num_elites=cfg.overrides.get("num_elites", None),
@@ -418,7 +416,7 @@ def rollout_model_env(
     model_env: deeptrade.models.ModelEnv,
     initial_obs: np.ndarray,
     plan: Optional[np.ndarray] = None,
-    agent: Optional[deeptrade.planning.Agent] = None,
+    agent: Optional[deeptrade.optimization.Agent] = None,
     num_samples: int = 1,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rolls out an environment model.
@@ -429,7 +427,7 @@ def rollout_model_env(
          model_env (:class:`deeptrade.models.ModelEnv`): the dynamics model environment to simulate.
          initial_obs (np.ndarray): initial observation to start the episodes.
          plan (np.ndarray, optional): sequence of actions to execute.
-         agent (:class:`deeptrade.planning.Agent`): an agent to generate a plan before
+         agent (:class:`deeptrade.optimization.Agent`): an agent to generate a plan before
             execution starts (as in `agent.plan(initial_obs)`). If given, takes precedence
             over ``plan``.
         num_samples (int): how many samples to take from the model (i.e., independent rollouts).
@@ -458,7 +456,7 @@ def rollout_model_env(
 def rollout_agent_trajectories(
     env: gym.Env,
     steps_or_trials_to_collect: int,
-    agent: deeptrade.planning.Agent,
+    agent: deeptrade.optimization.Agent,
     agent_kwargs: Dict,
     trial_length: Optional[int] = None,
     callback: Optional[Callable] = None,
@@ -476,7 +474,7 @@ def rollout_agent_trajectories(
         env (gym.Env): the environment to step.
         steps_or_trials_to_collect (int): how many steps of the environment to collect. If
             ``collect_trajectories=True``, it indicates the number of trials instead.
-        agent (:class:`deeptrade.planning.Agent`): the agent used to generate an action.
+        agent (:class:`deeptrade.optimization.Agent`): the agent used to generate an action.
         agent_kwargs (dict): any keyword arguments to pass to `agent.act()` method.
         trial_length (int, optional): a maximum length for trials (env will be reset regularly
             after this many number of steps). Defaults to ``None``, in which case trials
@@ -565,7 +563,7 @@ def rollout_agent_trajectories(
 def step_env_and_add_to_buffer(
     env: gym.Env,
     obs: np.ndarray,
-    agent: deeptrade.planning.Agent,
+    agent: deeptrade.optimization.Agent,
     agent_kwargs: Dict,
     replay_buffer: ReplayBuffer,
     callback: Optional[Callable] = None,
@@ -577,7 +575,7 @@ def step_env_and_add_to_buffer(
         env (gym.Env): the environment to step.
         obs (np.ndarray): the latest observation returned by the environment (used to obtain
             an action from the agent).
-        agent (:class:`deeptrade.planning.Agent`): the agent used to generate an action.
+        agent (:class:`deeptrade.optimization.Agent`): the agent used to generate an action.
         agent_kwargs (dict): any keyword arguments to pass to `agent.act()` method.
         replay_buffer (:class:`deeptrade.util.ReplayBuffer`): the replay buffer
             containing stored data.

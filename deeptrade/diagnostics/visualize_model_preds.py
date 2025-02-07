@@ -11,7 +11,7 @@ from omegaconf import DictConfig
 
 import deeptrade
 import deeptrade.models
-import deeptrade.planning
+import deeptrade.optimization
 import deeptrade.util.common
 
 VisData = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
@@ -64,24 +64,24 @@ class DataVisualizer:
             generator=torch.Generator(self.dynamics_model.device),
         )
 
-        self.agent: deeptrade.planning.Agent
+        self.agent: deeptrade.optimization.Agent
         if agent_dir is None:
-            self.agent = deeptrade.planning.RandomAgent(self.env)
+            self.agent = deeptrade.optimization.RandomAgent(self.env)
         else:
             agent_cfg = deeptrade.util.common.load_hydra_cfg(agent_dir)
             if (
                 agent_cfg.algorithm.agent._target_
-                == "deeptrade.planning.TrajectoryOptimizerAgent"
+                == "deeptrade.optimization.TrajectoryOptimizerAgent"
             ):
                 agent_cfg.algorithm.agent.planning_horizon = lookahead
                 print(f"agent_cfg.algorithm.agent: {agent_cfg.algorithm.agent}")
-                self.agent = deeptrade.planning.create_trajectory_optim_agent_for_model(
+                self.agent = deeptrade.optimization.create_trajectory_optim_agent_for_model(
                     self.model_env,
                     agent_cfg.algorithm.agent,
                     num_particles=agent_cfg.algorithm.num_particles,
                 )
             else:
-                self.agent = deeptrade.planning.load_agent(agent_dir, self.env)
+                self.agent = deeptrade.optimization.load_agent(agent_dir, self.env)
 
         self.fig = None
         self.axs: List[plt.Axes] = []
@@ -263,7 +263,7 @@ class Visualizer:
         self,
         lookahead: int,
         model_env: deeptrade.models.ModelEnv,
-        agent: deeptrade.planning.Agent,
+        agent: deeptrade.optimization.Agent,
         env: gym.Env,
         cfg: DictConfig,
         log_dir: pathlib.PosixPath,

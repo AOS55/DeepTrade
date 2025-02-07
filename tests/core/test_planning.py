@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-from deeptrade import planning
+from deeptrade import optimization
 
 
 def create_pid_agent(dim,
                      state_mapping=None,
                      batch_dim=1):
-    agent = planning.PIDAgent(k_p=np.ones(dim, ),
+    agent = optimization.PIDAgent(k_p=np.ones(dim, ),
                               k_i=np.ones(dim, ),
                               k_d=np.ones(dim, ),
                               target=np.zeros(dim, ),

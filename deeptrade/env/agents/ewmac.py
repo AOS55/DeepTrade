@@ -6,55 +6,51 @@ import numpy as np
 class EWMACAgent:
 
     def __init__(self,
-                 env: gym.Env,
                  fast_period: int = 10,
                  slow_period: int = 40,
-                 pos_size: float = 10.0,
-                 instrument: Optional[int] = 0):
+                 pos_size: float = 10.0):
 
-        self._env = env
-        self._env_type = type(env.unwrapped)
-        self.instrument = instrument
+        if fast_period >= slow_period:
+            raise ValueError("fast_period must be less than slow_period")
+        if fast_period <= 0 or slow_period <= 0:
+            raise ValueError("Periods must be positive")
+        if pos_size <= 0:
+            raise ValueError("Position size must be positive")
+
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.pos_size = pos_size
 
-    def act(self, state: np.ndarray) -> int:
-        
-        time = self._env.unwrapped.time
-        
-        from deeptrade.env import MultiInstrumentEnv
-        if self._env_type == MultiInstrumentEnv:
-            
-            price_data = self._env.unwrapped.prices_data
-            actions = np.zeros_like(state["positions"])
-            if self.instrument is None:
-                for idp in range(len(state["positions"])):
-                    fast = np.array(price_data[idp][time-self.fast_period:time]).mean()
-                    slow = np.array(price_data[idp][time-self.slow_period:time]).mean()
-                    if (fast > slow) and state["positions"][idp] < 1.0:
-                        actions[idp] = self.pos_size
-                    elif (fast < slow) and state["positions"][idp] > -1.0:
-                        actions[idp] = -self.pos_size
-                    else:
-                        actions[idp] = 0.0
-            else:
-                fast = np.array(price_data[self.instrument][time-self.fast_period:time]).mean()
-                slow = np.array(price_data[self.instrument][time-self.slow_period:time]).mean()
-                if (fast > slow) and state["positions"][self.instrument] < 1.0:
-                    actions[self.instrument] = self.pos_size
-                elif (fast < slow) and state["positions"][self.instrument] > -1.0:
-                    actions[self.instrument] = -self.pos_size
-                else:
-                    actions[self.instrument] = 0.0
-            return actions
-        else:
-            price_data = self._env.unwrapped.prices_data
-            fast = np.array(price_data[time-self.fast_period:time]).mean()
-            slow = np.array(price_data[time-self.slow_period:time]).mean()
-            if (fast > slow) and state[-2] < 1.0:
-                return np.array([self.pos_size])
-            elif (fast < slow) and state[-2] > -1.0:
-                return np.array([-1 * self.pos_size])
-            else:
-                return np.array([0.0])
+        # Calculate decay factors
+        self.fast_alpha = 2.0 / (fast_period + 1)
+        self.slow_alpha = 2.0 / (slow_period + 1)
+
+    @staticmethod
+    def _calculate_ewma(data: np.ndarray, alpha: float) -> np.ndarray:
+        """Vectorized EWMA calculation"""
+        weights = (1-alpha)**np.arange(data.shape[1])
+        weights = weights[::-1]
+        weights /= weights.sum()
+
+        # Calculate weighted sum for each row
+        result = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'), 1, data)
+        return result[:,-1]
+
+    def act(self, prices: np.ndarray, positions: np.ndarray) -> np.ndarray:
+
+        actions = np.zeros_like(positions)
+
+        if len(prices.shape) == 1:
+            prices = prices.reshape(1, -1)
+
+        if prices.shape[1] < self.slow_period:
+            return np.zeros_like(positions)
+
+        fast = self._calculate_ewma(prices, self.fast_alpha)
+        slow = self._calculate_ewma(prices, self.slow_alpha)
+        trends = fast > slow  # boolean array True if long, False if short
+
+        actions[trends] = self.pos_size
+        actions[~trends] = -self.pos_size
+
+        return actions

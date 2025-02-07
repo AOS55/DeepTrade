@@ -4,14 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 import pathlib
 from collections.abc import Sequence
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 
 import numpy as np
 import torch
 
 import deeptrade.models.util as model_util
 import deeptrade.types
-import deeptrade.util.math
+import deeptrade.util.nn_math
 
 from .model import Ensemble, Model
 
@@ -57,9 +57,8 @@ class OneDTransitionRewardModel(Model):
             :meth:`update_normalizer` before using the model. Defaults to ``False``.
         normalize_double_precision (bool): if ``True``, the normalizer will work with
             double precision.
-        learned_rewards (bool): if ``True``, the wrapper considers the last output of the model
-            to correspond to rewards predictions, and will use it to construct training
-            targets for the model and when returning model predictions. Defaults to ``True``.
+        reward_fn (callable, optional): if provided, the model will use this function to calculate
+            rewards from the predicted observations.
         obs_process_fn (callable, optional): if provided, observations will be passed through
             this function before being given to the model (and before the normalizer also).
             The processed observations should have the same dimensions as the original.
@@ -77,7 +76,7 @@ class OneDTransitionRewardModel(Model):
         target_is_delta: bool = True,
         normalize: bool = False,
         normalize_double_precision: bool = False,
-        learned_rewards: bool = True,
+        reward_fn: Optional[Callable] = None,  # TODO: type
         obs_process_fn: Optional[deeptrade.types.ObsProcessFnType] = None,
         no_delta_list: Optional[List[int]] = None,
         num_elites: Optional[int] = None,
@@ -92,7 +91,7 @@ class OneDTransitionRewardModel(Model):
                 dtype=torch.double if normalize_double_precision else torch.float,
             )
         self.device = self.model.device
-        self.learned_rewards = learned_rewards
+        self.reward_fn = reward_fn  # reward function to directly calculate rewards
         self.target_is_delta = target_is_delta
         self.no_delta_list = no_delta_list if no_delta_list else []
         self.obs_process_fn = obs_process_fn
@@ -129,11 +128,7 @@ class OneDTransitionRewardModel(Model):
         target_obs = model_util.to_tensor(target_obs).to(self.device)
 
         model_in = self._get_model_input(obs, action)
-        if self.learned_rewards:
-            reward = model_util.to_tensor(reward).to(self.device).unsqueeze(reward.ndim)
-            target = torch.cat([target_obs, reward], dim=obs.ndim - 1)
-        else:
-            target = target_obs
+        target = target_obs
         return model_in.float(), target.float()
 
     def forward(self, x: torch.Tensor, *args, **kwargs) -> Tuple[torch.Tensor, ...]:
@@ -279,13 +274,15 @@ class OneDTransitionRewardModel(Model):
         preds, next_model_state = self.model.sample_1d(
             model_in, model_state, rng=rng, deterministic=deterministic
         )
-        next_observs = preds[:, :-1] if self.learned_rewards else preds
+        next_observs = preds
         if self.target_is_delta:
             tmp_ = next_observs + obs
             for dim in self.no_delta_list:
                 tmp_[:, dim] = next_observs[:, dim]
             next_observs = tmp_
-        rewards = preds[:, -1:] if self.learned_rewards else None
+        rewards = None
+        if self.reward_fn is not None:
+            rewards = self.reward_fn(act, next_observs)
         next_model_state["obs"] = next_observs
         return next_observs, rewards, None, next_model_state
 

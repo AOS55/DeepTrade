@@ -3,51 +3,61 @@ from typing import Tuple
 from . import termination_fns
 
 
-def make_single_instrument_reward_fn(action_bounds: Tuple[float, float] = (-10.0, 10.0)):
-    """Creates a reward function for the trading environment model that handles position limits."""
-    positions = torch.tensor(0.0)
-    
-    def reward_fn(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
-        nonlocal positions
-        if positions.device != act.device:
-            positions = positions.to(act.device)
-            
-        # Handle batch dimensions for planning
-        if act.dim() > positions.dim() + 1:  # If we have extra batch dimensions
-            # For planning, we'll use the first observation's position as initial
-            positions_expanded = positions.expand(*act.shape[:-1])
-            position_changes = act[..., 0]
-            new_positions = positions_expanded + position_changes
-            new_positions = torch.clamp(new_positions, action_bounds[0], action_bounds[1])
-            
-            # Calculate rewards using the sequence of positions
-            latest_returns = next_obs[..., -1]
-            rewards = positions_expanded * latest_returns
-            
-            # Only update the actual position if this is a real environment step
-            if act.dim() == 2:
-                positions = new_positions[-1]
-        else:
-            # Normal environment step
-            position_changes = act[..., 0]
-            new_positions = positions + position_changes
-            new_positions = torch.clamp(new_positions, action_bounds[0], action_bounds[1])
-            
-            latest_returns = next_obs[..., -1]
-            rewards = positions * latest_returns
-            
-            positions = new_positions
-            
-        return rewards.unsqueeze(-1)
-    
-    def reset():
-        nonlocal positions
-        positions = torch.tensor(0.0)
-        
-    reward_fn.reset = reset
-    return reward_fn
-    
-        
+def single_instrument_reward(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
+    """Calculate reward as position * price_change.
+
+    Args:
+        act: Tensor containing positions
+        next_obs: Tensor containing returns/price data
+
+    Returns:
+        Tensor of rewards
+    """
+    delta_price = next_obs[..., -1] - next_obs[..., -2]
+    position = act[..., 0]
+    rewards = position * delta_price
+    return rewards.unsqueeze(-1)
+
+# def make_single_instrument_reward_fn(action_bounds: Tuple[float, float] = (-10.0, 10.0)):
+#     """Creates a reward function for the trading environment model that handles position limits."""
+#     positions = torch.tensor(0.0)
+
+#     def reward_fn(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
+#         nonlocal positions
+#         if positions.device != act.device:
+#             positions = positions.to(act.device)
+
+#         delta_price = next_obs[..., -1] - next_obs[..., -2]
+#         rewards = positions * delta_price
+
+#         # Handle batch dimensions for planning
+#         if act.dim() > positions.dim() + 1:  # If we have extra batch dimensions
+#             # For planning, we'll use the first observation's position as initial
+#             positions_expanded = positions.expand(*act.shape[:-1])
+#             position_changes = act[..., 0]
+#             new_positions = positions_expanded + position_changes
+#             new_positions = torch.clamp(new_positions, action_bounds[0], action_bounds[1])
+
+#             if act.dim() == 2:
+#                 positions = new_positions[-1]
+
+#         else:
+#             # Normal environment step
+#             position_changes = act[..., 0]
+#             new_positions = positions + position_changes
+#             new_positions = torch.clamp(new_positions, action_bounds[0], action_bounds[1])
+#             positions = new_positions
+
+#         return rewards.unsqueeze(-1)
+
+#     def reset():
+#         nonlocal positions
+#         positions = torch.tensor(0.0)
+
+#     reward_fn.reset = reset
+#     return reward_fn
+
+
 # def single_instrument(act: torch.Tensor, next_obs: torch.Tensor) -> torch.Tensor:
 #     last_price = next_obs[:, -4]
 #     current_price = next_obs[:, -3]

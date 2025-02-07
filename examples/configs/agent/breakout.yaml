@@ -1,0 +1,7 @@
+_target_: "deeptrade.env.agents.breakout.BreakoutAgent"
+lookback_period: 20
+smooth: 5
+pos_size: 10.0
+vol_target: 0.20
+vol_scale: linear
+threshold: 5.0

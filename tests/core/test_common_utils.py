@@ -38,7 +38,6 @@ def test_create_one_dim_tr_model():
             "y": 2,
         },
         "algorithm": {
-            "learned_rewards": True,
             "target_is_delta": True,
             "normalize": True,
         },
@@ -52,7 +51,7 @@ def test_create_one_dim_tr_model():
 
     assert isinstance(dynamics_model.model, MockModel)
     assert dynamics_model.model.in_size == obs_shape[0] + act_shape[0]
-    assert dynamics_model.model.out_size == obs_shape[0] + 1
+    assert dynamics_model.model.out_size == obs_shape[0]
     assert dynamics_model.model.x == 1 and dynamics_model.model.y == 2
     assert dynamics_model.num_elites is None
     assert dynamics_model.no_delta_list == []
@@ -103,7 +102,6 @@ def test_create_custom_ensemble_dynamics():
             },
         },
         "algorithm": {
-            "learned_rewards": True,
             "target_is_delta": True,
             "normalize": True,
         },
@@ -117,7 +115,7 @@ def test_create_custom_ensemble_dynamics():
 
     assert isinstance(dynamics_model.model, CustomEnsemble)
     assert dynamics_model.model.in_size == obs_shape[0] + act_shape[0]
-    assert dynamics_model.model.out_size == obs_shape[0] + 1
+    assert dynamics_model.model.out_size == obs_shape[0]
 
 
 def test_create_replay_buffer():

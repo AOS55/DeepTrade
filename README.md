@@ -4,7 +4,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b115af01c853420cac4503e23e783f96)](https://app.codacy.com/gh/AOS55/DeepTrade/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 # DeepTrade
 
-Deeptrade is a backtesting system and library designed to test and evaluate machine learning based strategies.
+Deeptrade is a backtesting system and library designed to test and evaluate machine learning based trading strategies.
 
 > [!NOTE]
 > :construction: DeepTrade is still under construction :construction:
@@ -55,8 +55,14 @@ python -m pytest tests/instruments
 
 The core idea of DeepTrade is to backtest machine learning trading strategies based on either synthetic or real data. Backtesting is split into 2 datasets, training data, available at the start of the theoretical trading period and backtest data used to evaluate the strategy which is where you started the strategy from. The following provides an overview of the basic components of the library, examples of various backtests are provided in the [notebooks](notebooks) directory. These include:
 
-- [Basic Rules](notebooks/basic_rules.ipynb): An example of how the basic environment rollout using classical trading rules.
-- [Multi-Instrument](notebooks/multi_instrument.ipynb): An example of how to use the multi-instrument environment. This shows how to construct a multi-asset portfolio and plots the optimal portfolio allocation weights. 
+1. [Basic Rules](notebooks/01-Basic_Rules.ipynb): How to use the basic `SingleInstrument` environment with classical trading rules.
+2. [Time Series](notebooks/02-Time_Series.ipynb): Summary of the different time-series models available to automatically generate prices.
+3. [Optimal Portoflio](notebooks/03-Optimal_Portfolio.ipynb): How to use the `MultiInstrument` environment to construct an optimal portfolio using time-series models.
+4. [Representation Learning](notebooks/04-Representation_Learning.ipynb): Representations of returns using autoencoders.
+5. [Forecasting](notebooks/05-Forecasting.ipynb): Comparison of forecasts on financial time-series data.
+6. [Model Based RL](notebooks/06-Model_Based_RL.ipynb): How to use the `PETS` agent to train a single asset model-based RL agent.
+7. [Systematic Trading](notebooks/07-Systematic_Trading.ipynb): How to generate a full systematic trading system with DeepTrade.
+
 
 The train-backtest split is shown below:
 
@@ -74,12 +80,12 @@ The classical [Markov Decision Process](https://en.wikipedia.org/wiki/Markov_dec
        -  `Margin`: the amount of cash available.
        -  `Positions`: the quantity of the asset held.
 
-  The observation of the environment is a numpy array consisting of:
-    - `returns`, $r_{t-\tau:t}$ from the asset price, usually log returns over `window` $\tau$.
-    - `position`, position of the portfolio in the asset.
-    - `margin`, the amount of cash available.
+  The environment's *observation* is a numpy array consisting of `returns`, $r_{t-\tau:t}$ from the asset price, usually log returns over `window` $\tau$.
+  The environment's *action* is a numpy vector of agents positions, this is immediataly applied at the next time step within the bounds of the environments action space.
 
-- **Agent**: The agent, $\pi(a|s)$, is the decision maker that interacts with the environment. The agent is responsible for selecting actions based on observations from the environment. Model Based RL (MBRL) agents are provided along with classical systematic trading strategies. These include:
+  Currently `SingleInstrument` and `MultiInstrument` update $s \rightarrow s'$ independent of $a$, simulating a liquid market with no slippage. Future versions of the environment aim to include slippage and transaction costs.
+
+- **Agent**: $\pi(a|s)$, is the decision maker that interacts with the environment. The agent is responsible for selecting actions based on observations from the environment. Model Based RL (MBRL) agents are provided along with classical systematic trading strategies. These include:
   - **MBRL agents**
     - `PETS`: Probabilistic Ensemble Trajectory Sampling from [Chua et al. (2018)](https://arxiv.org/abs/1805.12114).
     - `MBPO`: :construction: Model Based Policy Optimization from [Janner et al. (2019)](https://arxiv.org/abs/1906.08253). :construction:
